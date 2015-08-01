@@ -1,0 +1,13 @@
+Compilar y ejecutar "C" en Linux
+--------------------------------
+
+Si el nombre del archivo con el código fuente es "main.c"
+y la salida queremos que tenga el nombre "test"
+debemos ejecutar el siguiente comando para compilar:
+
+gcc -o test main.c
+
+Para ejecutar tenemos que ejecutar el programa "test"
+debemos ejecutar el siguiente comando:
+
+./test
