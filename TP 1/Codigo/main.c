@@ -11,6 +11,7 @@ las variables del kernel a través del /proc e informe por stdout:
 */
 
 #include <stdio.h>
+#include <string.h>
 #define BUFFSIZE 256
 
 main(int argc, char *argv[]) {
@@ -30,25 +31,31 @@ main(int argc, char *argv[]) {
   //La primera linea no me sirve
   fgets(aux, BUFFSIZE+1, file);
 
-  //Leo el "Type" y lo pongo en cpu_type
+  //Leo la linea de "Type" y lo pongo en cpu_type
   fgets(cpu_type, BUFFSIZE+1, file);
 
   //Tercera y cuarta linea no me sirven
   fgets(aux, BUFFSIZE+1, file);
   fgets(aux, BUFFSIZE+1, file);
 
-  //Leo el "Model" y lo pongo en cpu_model
+  //Leo la linea de "Model" y lo pongo en cpu_model
   fgets(cpu_model, BUFFSIZE+1, file);
 
   //Cierro el archivo
   fclose(file);
 
-  //Imprimo lo leido
-  printf("\n");
-  printf("INFO:\n");
-  printf("-----\n\n");
+  //Con "strtok" divido en ":" y obtengo solo lo que necesito
 
-  printf("%s \n", cpu_type);
-  printf("%s \n", cpu_model);
+  char *divider = ":";
+
+  char *token = strtok(cpu_type, divider);
+  token = strtok(NULL, divider);
+
+  printf("CPU Type: %s", token);
+
+  token = strtok(cpu_model, divider);
+  token = strtok(NULL, divider);
+
+  printf("CPU Model: %s", token);
 
 }
