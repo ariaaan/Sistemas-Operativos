@@ -26,6 +26,7 @@ void getFilesystems();
 void getCpuUsageTime();
 void getProcessesCreated();
 void getContextSwitch();
+void getStartupDateTime();
 
 main(int argc, char *argv[]) {
   //Posibles parámetros
@@ -70,6 +71,10 @@ void showExtraInfo() {
   getContextSwitch();
 
   printf("\n");
+}
+
+void getStartupDateTime() {
+
 }
 
 void getContextSwitch() {
