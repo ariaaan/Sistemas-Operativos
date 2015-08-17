@@ -14,18 +14,28 @@ las variables del kernel a través del /proc e informe por stdout:
 #include <string.h>
 #define BUFFSIZE 256
 
-int cantidad_horas(int segundos);
-int cantidad_minutos(int segundos);
+void getHostname();
+void getCpuInfo();
+void getFechaHora();
+void getKernelInfo();
+void getUptime();
+void getFilesystems();
 
 main(int argc, char *argv[]) {
 
+  getHostname();
+  getFechaHora();
+  getCpuInfo();
+  getKernelInfo();
+  getUptime();
+
+  return 0;
+}
+
+void getHostname() {
   //Archivo
   FILE *file;
 
-  //String auxiliar
-  char aux[BUFFSIZE+1] = {0};
-
-//Hostname
   //Strings
   char hostname[BUFFSIZE+1] = {0};
 
@@ -38,8 +48,16 @@ main(int argc, char *argv[]) {
   printf("Hostname: %s", hostname);
 
   fclose(file);
+}
 
-//Fecha y hora
+void getFechaHora(){
+  //Archivo
+  FILE *file;
+
+  //String auxiliar
+  char aux[BUFFSIZE+1] = {0};
+
+  //Fecha y hora
   char fecha[BUFFSIZE+1] = {0};
   char hora[BUFFSIZE+1] = {0};
 
@@ -75,12 +93,18 @@ main(int argc, char *argv[]) {
 
   strcpy(fecha, token);
   printf("Fecha: %s", fecha);
+}
 
-//CPU
+void getCpuInfo(){
+  //Archivo
+  FILE *file;
+
+  //String auxiliar
+  char aux[BUFFSIZE+1] = {0};
+
   //Strings
   char cpu_type[BUFFSIZE+1] = {0};
   char cpu_model[BUFFSIZE+1] = {0};
-
 
   //Abro el archivo "/proc/cpuinfo"
   file = fopen("/proc/cpuinfo","r");
@@ -102,9 +126,9 @@ main(int argc, char *argv[]) {
   fclose(file);
 
   //Con "strtok" divido en ":" y obtengo solo lo que necesito
-  divider = ":";
+  char *divider = ":";
 
-  token = strtok(cpu_type, divider);
+  char *token = strtok(cpu_type, divider);
   token = strtok(NULL, divider);
 
   strcpy(cpu_type, token);
@@ -115,8 +139,15 @@ main(int argc, char *argv[]) {
 
   strcpy(cpu_model, token);
   printf("CPU Model: %s", cpu_model);
+}
 
-//Kernel
+void getKernelInfo() {
+  //Archivo
+  FILE *file;
+
+  //String auxiliar
+  char aux[BUFFSIZE+1] = {0};
+
   //Strings
   char kernel_version[BUFFSIZE+1] = {0};
 
@@ -132,8 +163,12 @@ main(int argc, char *argv[]) {
   printf("Kernel Version: %s\n", kernel_version);
 
   fclose(file);
+}
 
-//Uptime
+void getUptime() {
+  //Archivo
+  FILE *file;
+
   //Strings
   char uptime[BUFFSIZE+1] = {0};
 
@@ -144,26 +179,33 @@ main(int argc, char *argv[]) {
   fgets(uptime, BUFFSIZE+1, file);
 
   //Divido en espacios y tomo el primer token
-  divider = " ";
-  token = strtok(uptime, divider);
+  char *divider = " ";
+  char *token = strtok(uptime, divider);
 
   //Convierto el valor en segundos
   int uptime_en_segundos;
   sscanf(uptime, "%d", &uptime_en_segundos);
 
   //Lo paso a formato hh:mm.ss
-  int horas = cantidad_horas(uptime_en_segundos);
+  int horas = uptime_en_segundos / 3600;
   uptime_en_segundos = uptime_en_segundos - 3600*horas;
-  int minutos = cantidad_minutos(uptime_en_segundos);
+  int minutos = uptime_en_segundos / 60;
   int segundos = uptime_en_segundos - minutos*60;
 
   printf("Uptime: %d:%d:%d\n", horas, minutos, segundos);
 
   fclose(file);
+}
 
-//Filesystems
+void getFilesystems() {
+  //Archivo
+  FILE *file;
+
   //Strings
   char filesystems[BUFFSIZE+1] = {0};
+
+  //String auxiliar
+  char aux[BUFFSIZE+1] = {0};
 
   //Abro el archivo "/proc/filesystems"
   file = fopen("/proc/filesystems","r");
@@ -180,14 +222,4 @@ main(int argc, char *argv[]) {
   printf("Candidad Filesystems: %d\n", cantidad_filesystems);
 
   fclose(file);
-}
-
-int cantidad_horas(int segundos) {
-    int horas = segundos / 3600;
-    return horas;
-}
-
-int cantidad_minutos(int segundos) {
-    int minutos = segundos / 60;
-    return minutos;
 }
