@@ -11,6 +11,7 @@ agrega la siguiente información:
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define BUFFSIZE 256
 
@@ -27,7 +28,7 @@ void getFilesystems(char *filesystems, int size);
 void getCpuUsageTime(char *cpu_user_time, char *cpu_system_time, char *cpu_idle_time, int size);
 void getProcessesCreated(char *processes_created, int size);
 void getContextSwitch(char *context_switches, int size);
-void getStartupDateTime();
+void getStartupDateTime(char *startup_date_time, int size);
 
 main(int argc, char *argv[]) {
   //Posibles parámetros
@@ -139,12 +140,58 @@ void showExtra() {
   context_switches[strcspn(context_switches, "\n")] = 0;
   printf("Context Switches: %s\n", context_switches);
 
+//Startup Date and Time
+  size = 32;
+  char *startup_date_time = malloc(size*sizeof(char));
+  getStartupDateTime(startup_date_time, size);
+  startup_date_time[strcspn(startup_date_time, "\n")] = 0;
+  printf("Startup Date and Time: %s\n", startup_date_time);
+
 //New Line
   printf("\n");
 }
 
-void getStartupDateTime() {
+void getStartupDateTime(char *startup_date_time, int size) {
+  //Variables
+  time_t rawtime;
+  struct tm *timeinfo;
 
+  //Obtengo el tiempo actual
+  time (&rawtime);
+  timeinfo = localtime (&rawtime);
+
+  //Agrego el uptime en segundos
+  timeinfo->tm_sec += getUptimeSeconds();
+
+  //Mktime para normalizar
+  mktime(timeinfo);
+
+  //Copio el string con la fecha/hora en startup_date_time
+  strcpy(startup_date_time, asctime(timeinfo));
+}
+
+int getUptimeSeconds() {
+  //Auxiliar
+  char aux[BUFFSIZE+1] = {0};
+
+  //Archivo
+  FILE *file;
+
+  //Abro el archivo "/proc/uptime"
+  file = fopen("/proc/uptime","r");
+
+  //Leo la primera linea y la guardo
+  fgets(aux, BUFFSIZE+1, file);
+
+  //Divido en espacios y tomo el primer token
+  char *divider = " ";
+  char *token = strtok(aux, divider);
+
+  //Convierto el valor en segundos
+  int uptime_en_segundos;
+  sscanf(aux, "%d", &uptime_en_segundos);
+
+  return uptime_en_segundos;
 }
 
 void getContextSwitch(char *context_switches, int size) {
@@ -264,8 +311,6 @@ void getHostname(char *hostname, int size) {
   //printf("Hostname: %s", hostname);
 
   fclose(file);
-
-
 }
 
 void getDateTime(char *date, char *time, int size) {
@@ -368,27 +413,8 @@ void getKernelVersion(char *kernel_version, int size) {
 }
 
 void getUptime(char *uptime, int size) {
-  //Archivo
-  FILE *file;
-
-  //Vacio el string
-  uptime[0] = '\0';
-
-  char aux[BUFFSIZE+1] = {0};
-
-  //Abro el archivo "/proc/uptime"
-  file = fopen("/proc/uptime","r");
-
-  //Leo la primera linea y la guardo
-  fgets(aux, size+1, file);
-
-  //Divido en espacios y tomo el primer token
-  char *divider = " ";
-  char *token = strtok(aux, divider);
-
-  //Convierto el valor en segundos
-  int uptime_en_segundos;
-  sscanf(aux, "%d", &uptime_en_segundos);
+  //Obtengo el uptime en segundos
+  int uptime_en_segundos = getUptimeSeconds();
 
   //Lo paso a formato hh:mm.ss
   int horas = uptime_en_segundos / 3600;
@@ -396,7 +422,8 @@ void getUptime(char *uptime, int size) {
   int minutos = uptime_en_segundos / 60;
   int segundos = uptime_en_segundos - minutos*60;
 
-  aux[0] = '\0';
+  char aux[BUFFSIZE+1] = {0};
+  uptime[0] = '\0';
 
   sprintf(aux, "%d", horas);
   if(horas < 10) {
@@ -425,8 +452,6 @@ void getUptime(char *uptime, int size) {
   } else {
     strcat(uptime, aux);
   }
-
-  fclose(file);
 }
 
 void getFilesystems(char *filesystems, int size) {
