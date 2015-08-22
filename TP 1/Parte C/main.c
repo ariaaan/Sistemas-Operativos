@@ -20,7 +20,7 @@ void showExtra();
 
 void getHostname(char *hostname, int size);
 void getCpuInfo(char *cpu_type, char *cpu_model, int size);
-void getDateTime(char *date, char *time, int size);
+void getDateTime(char *date_time, int size);
 void getKernelVersion(char *kernel_version, int size);
 void getUptime(char *uptime, int size);
 void getFilesystems(char *filesystems, int size);
@@ -29,6 +29,11 @@ void getCpuUsageTime(char *cpu_user_time, char *cpu_system_time, char *cpu_idle_
 void getProcessesCreated(char *processes_created, int size);
 void getContextSwitch(char *context_switches, int size);
 void getStartupDateTime(char *startup_date_time, int size);
+
+int getUptimeSeconds();
+
+time_t t;
+struct tm tm;
 
 main(int argc, char *argv[]) {
   //Posibles parámetros
@@ -65,13 +70,12 @@ void showInfo() {
 
 // Date - Time
   size = 16;
-  char *date = malloc(size*sizeof(char));
-  char *time = malloc(size*sizeof(char));
-  getDateTime(date, time, size);
-  date[strcspn(date, "\n")] = 0;
-  time[strcspn(time, "\n")] = 0;
-  printf("Date: %s\n", date);
-  printf("Time: %s\n", time);
+  char *date_time = malloc(size*sizeof(char));
+  getDateTime(date_time, size);
+  date_time[strcspn(date_time, "\n")] = 0;
+  printf("Date and Time: %s\n", date_time);
+
+  printf("\n");
 
 // CPU Info
   size = 256;
@@ -122,9 +126,9 @@ void showExtra() {
   cpu_user_time[strcspn(cpu_user_time, "\n")] = 0;
   cpu_system_time[strcspn(cpu_system_time, "\n")] = 0;
   cpu_idle_time[strcspn(cpu_idle_time, "\n")] = 0;
-  printf("CPU User Time: %s\n", cpu_user_time);
-  printf("CPU System Time: %s\n", cpu_system_time);
-  printf("CPU Idle Time: %s\n", cpu_idle_time);
+  printf("CPU User Time: %s [USER_HZ]\n", cpu_user_time);
+  printf("CPU System Time: %s [USER_HZ]\n", cpu_system_time);
+  printf("CPU Idle Time: %s [USER_HZ]\n", cpu_idle_time);
 
 // Processes Created
   size = 16;
@@ -151,7 +155,9 @@ void showExtra() {
   printf("\n");
 }
 
-void getStartupDateTime(char *startup_date_time, int size) {
+
+void getDateTime(char *date_time, int size) {
+/*
   //Variables
   time_t rawtime;
   struct tm *timeinfo;
@@ -159,15 +165,23 @@ void getStartupDateTime(char *startup_date_time, int size) {
   //Obtengo el tiempo actual
   time (&rawtime);
   timeinfo = localtime (&rawtime);
+*/
+  t = time(NULL);
+  tm = *localtime(&t);
 
-  //Agrego el uptime en segundos
-  timeinfo->tm_sec += getUptimeSeconds();
+  sprintf(date_time, "%d-%d-%d %d:%d:%d\n", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-  //Mktime para normalizar
-  mktime(timeinfo);
+  //Copio el string con la fecha/hora en date_time
+  //strcpy(date_time, asctime(localtime(&result)));
+}
 
-  //Copio el string con la fecha/hora en startup_date_time
-  strcpy(startup_date_time, asctime(timeinfo));
+void getStartupDateTime(char *startup_date_time, int size) {
+  tm.tm_sec -= getUptimeSeconds();
+  mktime(&tm);
+  sprintf(startup_date_time, "%d-%d-%d %d:%d:%d\n", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+  //Copio el string con la fecha/hora en date_time
+  //strcpy(startup_date_time, asctime(localtime(&result)));
 }
 
 int getUptimeSeconds() {
@@ -191,15 +205,13 @@ int getUptimeSeconds() {
   int uptime_en_segundos;
   sscanf(aux, "%d", &uptime_en_segundos);
 
+  //Devuelvo los segundos
   return uptime_en_segundos;
 }
 
 void getContextSwitch(char *context_switches, int size) {
   //Archivo
   FILE *file;
-
-  //Cantidad procesos
-  int count = 0;
 
   //Variables auxiliares
   char aux[BUFFSIZE+1] = {0};
@@ -218,13 +230,11 @@ void getContextSwitch(char *context_switches, int size) {
     //Busco la primera palabra, dividiendo por " "
     token = strtok(aux, divider);
     if(strcmp(token, "ctxt") == 0) {
-      token = strtok(NULL, divider);
-      sscanf(token, "%d", &count);
-      break;
+        token = strtok(NULL, divider);
+        strcpy(context_switches, token);
+        break;
+      }
     }
-  }
-
-  sprintf(context_switches, "%d", count);
 }
 
 void getProcessesCreated(char *processes_created, int size) {
@@ -252,12 +262,10 @@ void getProcessesCreated(char *processes_created, int size) {
     token = strtok(aux, divider);
     if(strcmp(token, "processes") == 0) {
       token = strtok(NULL, divider);
-      sscanf(token, "%d", &processes);
+      strcpy(processes_created, token);
       break;
     }
   }
-
-  sprintf(processes_created, "%d", processes);
 }
 
 void getCpuUsageTime(char *cpu_user_time, char *cpu_system_time, char *cpu_idle_time, int size) {
@@ -308,47 +316,7 @@ void getHostname(char *hostname, int size) {
   //Leo la primera linea
   fgets(hostname, size, file);
 
-  //printf("Hostname: %s", hostname);
-
   fclose(file);
-}
-
-void getDateTime(char *date, char *time, int size) {
-  //Archivo
-  FILE *file;
-
-  //String auxiliar
-  char aux[BUFFSIZE+1] = {0};
-
-  //Abro el archivo "/proc/driver/rtc"
-  file = fopen("/proc/driver/rtc","r");
-
-  //Leo la primera linea (hora)
-  fgets(aux, BUFFSIZE+1, file);
-
-  //Divido en ":" y luego vuelvo a unir la hora
-  char *divider = ":";
-
-  char *token = strtok(aux, divider);
-  token = strtok(NULL, divider);
-  strcpy(time, token);
-  strcat(time, ":");
-
-  token = strtok(NULL, divider);
-  strcat(time, token);
-  strcat(time, ":");
-
-  token = strtok(NULL, divider);
-  strcat(time, token);
-
-  //Leo la segunda linea (fecha)
-  fgets(date, BUFFSIZE+1, file);
-
-  //Separo la parte que necesito con strtok
-  token = strtok(date, divider);
-  token = strtok(NULL, divider);
-
-  strcpy(date, token);
 }
 
 void getCpuInfo(char *cpu_type, char *cpu_model, int size) {
@@ -357,40 +325,32 @@ void getCpuInfo(char *cpu_type, char *cpu_model, int size) {
 
   //String auxiliar
   char aux[BUFFSIZE + 1] = {0};
+  cpu_type[0] = '\0';
+  cpu_model[0] = '\0';
 
   //Abro el archivo "/proc/cpuinfo"
   file = fopen("/proc/cpuinfo","r");
 
-  //La primera linea no me sirve
-  fgets(aux, size + 1, file);
-
-  //Leo la linea de "Type" y lo pongo en cpu_type
-  fgets(cpu_type, size + 1, file);
-
-  //Tercera y cuarta linea no me sirven
-  fgets(aux, size + 1, file);
-  fgets(aux, size + 1, file);
-
-  //Leo la linea de "Model" y lo pongo en cpu_model
-  fgets(cpu_model, size + 1, file);
-
-  //Cierro el archivo
-  fclose(file);
-
-  //Con "strtok" divido en ":" y obtengo solo lo que necesito
+  //Divido en " ""
   char *divider = ":";
+  char *token;
 
-  char *token = strtok(cpu_type, divider);
-  token = strtok(NULL, divider);
+  //Busco las lineas que empieza con "vendor_id" y "model name"
+  while(!feof(file)) {
+    //Leo la linea
+    fgets(aux, BUFFSIZE+1, file);
 
-  strcpy(cpu_type, token);
-  //printf("CPU Type: %s", cpu_type);
+    //Busco la primera palabra, dividiendo por " "
+    token = strtok(aux, divider);
 
-  token = strtok(cpu_model, divider);
-  token = strtok(NULL, divider);
-
-  strcpy(cpu_model, token);
-  //printf("CPU Model: %s", cpu_model);
+    if(strcmp(token, "vendor_id	") == 0) {
+      token = strtok(NULL, divider);
+      strcpy(cpu_type, token);
+    } else if(strcmp(token, "model name	") == 0) {
+      token = strtok(NULL, divider);
+      strcpy(cpu_model, token);
+    }
+  }
 }
 
 void getKernelVersion(char *kernel_version, int size) {
