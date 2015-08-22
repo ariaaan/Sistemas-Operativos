@@ -17,6 +17,7 @@ agrega la siguiente información:
 
 void showInfo();
 void showExtra();
+void showMore();
 
 void getHostname(char *hostname, int size);
 void getCpuInfo(char *cpu_type, char *cpu_model, int size);
@@ -30,29 +31,157 @@ void getProcessesCreated(char *processes_created, int size);
 void getContextSwitch(char *context_switches, int size);
 void getStartupDateTime(char *startup_date_time, int size);
 
+void getDiskInfo(char *disk_read, char *disk_write, int size);
+void getMemoryInfo(char *total_memory, char *available_memory, int size);
+void getLoadAvg(char *load_avg, int size);
+
 int getUptimeSeconds();
 
 time_t t;
 struct tm tm;
 
 main(int argc, char *argv[]) {
-  //Posibles parámetros
-  const char arg_extra_info[] = "-s";
 
-  //Informacion que se muestra siempre
   showInfo();
 
-  //Comparo los parametros que pasaron con los posibles parametros
-  int i = 0;
+  showExtra();
 
-  for (i = 0; i < argc; i++) {
-    if(strcmp(arg_extra_info, argv[i]) == 0) {
-      //Si se paso "-s" muestro información extra
-      showExtra();
+  showMore();
+
+  return 0;
+}
+
+void showMore() {
+// Title
+  printf("\n");
+  printf("More: \n");
+  printf("---- \n\n");
+
+// Disk Read-Write
+  int size = 16;
+  char *disk_read = malloc(size*sizeof(char));
+  char *disk_write = malloc(size*sizeof(char));
+  getDiskInfo(disk_read, disk_write, size);
+  disk_read[strcspn(disk_read, "\n")] = 0;
+  disk_write[strcspn(disk_write, "\n")] = 0;
+  printf("Disk Read: %s\n", disk_read);
+  printf("Disk Write: %s\n", disk_write);
+
+// Total / Available Memory
+  size = 16;
+  char *total_memory = malloc(size*sizeof(char));
+  char *available_memory = malloc(size*sizeof(char));
+  getMemoryInfo(total_memory, available_memory, size);
+  total_memory[strcspn(total_memory, "\n")] = 0;
+  available_memory[strcspn(available_memory, "\n")] = 0;
+  printf("Total Memory: %s\n", total_memory);
+  printf("Available Memory: %s\n", available_memory);
+
+// Load Average
+  size = 16;
+  char *load_avg = malloc(size*sizeof(char));
+  getLoadAvg(load_avg, size);
+  load_avg[strcspn(load_avg, "\n")] = 0;
+  printf("Load Average: %s\n", load_avg);
+
+  printf("\n");
+}
+
+void getLoadAvg(char *load_avg, int size) {
+  //Archivo
+  FILE *file;
+
+  //Abro el archivo "/proc/loadavg"
+  file = fopen("/proc/loadavg","r");
+
+  //Leo el valor
+  fscanf(file, "%s", load_avg);
+
+  fclose(file);
+}
+
+void getMemoryInfo(char *total_memory, char *available_memory, int size) {
+  //Archivo
+  FILE *file;
+
+  //Variables auxiliares
+  char aux[BUFFSIZE+1] = {0};
+  char buffer[BUFFSIZE+1] = {0};
+  char copy[BUFFSIZE+1] = {0};
+  int memTotal;
+  int memAvailable;
+
+  char *divider = ":";
+  char *token;
+
+  //Abro el archivo "/proc/meminfo"
+  file = fopen("/proc/meminfo","r");
+
+  //Busco la linea que tiene empieza con "MemTotal" y "MemAvailable"
+  while(!feof(file)) {
+    //Leo la linea
+    fgets(aux, BUFFSIZE+1, file);
+    strcpy(copy, aux);
+
+    //Busco el tercer token, dividiendo por " "
+    token = strtok(aux, divider);
+
+    if(strcmp(token, "MemTotal") == 0) {
+        //Total Memory
+        sscanf(copy, "%s %d", buffer, &memTotal);
+        snprintf(total_memory, size, "%d kB", memTotal);
+    } else if(strcmp(token, "MemAvailable") == 0) {
+        //Available Memmory
+        sscanf(copy, "%s %d", buffer, &memAvailable);
+        snprintf(available_memory, size, "%d kB", memAvailable);
     }
   }
 
-  return 0;
+  fclose(file);
+}
+
+void getDiskInfo(char *disk_read, char *disk_write, int size) {
+  //Archivo
+  FILE *file;
+
+  //Variables auxiliares
+  char aux[BUFFSIZE+1] = {0};
+
+  char *divider = " ";
+  char *token;
+
+  //Abro el archivo "/proc/diskstats"
+  file = fopen("/proc/diskstats","r");
+
+  //Busco la linea que tiene empieza con "sda"
+  while(!feof(file)) {
+    //Leo la linea
+    fgets(aux, BUFFSIZE+1, file);
+
+    //Busco el tercer token, dividiendo por " "
+    token = strtok(aux, divider);
+    token = strtok(NULL, divider);
+    token = strtok(NULL, divider);
+
+    if(strcmp(token, "sda") == 0) {
+        //Reads Completed
+        token = strtok(NULL, divider);
+        strncpy(disk_read, token, size);
+
+        //Datos no necesarios
+        token = strtok(NULL, divider);
+        token = strtok(NULL, divider);
+        token = strtok(NULL, divider);
+
+        //Writes Completed
+        token = strtok(NULL, divider);
+        strncpy(disk_write, token, size);
+
+        break;
+      }
+    }
+
+    fclose(file);
 }
 
 void showInfo() {
@@ -114,6 +243,7 @@ void showInfo() {
 
 void showExtra() {
 // Title
+  printf("\n");
   printf("Extra: \n");
   printf("------ \n\n");
 
