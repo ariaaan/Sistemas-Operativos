@@ -358,16 +358,18 @@ void getKernelVersion(char *kernel_version, int size) {
   FILE *file;
 
   //String auxiliar
-  char aux[BUFFSIZE+1] = {0};
+  char aux_1[BUFFSIZE+1] = {0};
+  char aux_2[BUFFSIZE+1] = {0};
+  char aux_3[BUFFSIZE+1] = {0};
 
   //Abro el archivo "/proc/version"
   file = fopen("/proc/version","r");
 
-  //Leo la primera linea y la guardo
-  fgets(aux, BUFFSIZE+1, file);
+
+  fscanf(file, "%s %s %s", aux_1, aux_2, aux_3);
 
   //Corto una parte del string obtenido
-  strncpy(kernel_version, aux, size);
+  strncpy(kernel_version, aux_3, size);
 
   fclose(file);
 }
