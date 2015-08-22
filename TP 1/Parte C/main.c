@@ -69,7 +69,7 @@ void showInfo() {
   printf("Hostname: %s\n", hostname);
 
 // Date - Time
-  size = 16;
+  size = 32;
   char *date_time = malloc(size*sizeof(char));
   getDateTime(date_time, size);
   date_time[strcspn(date_time, "\n")] = 0;
@@ -90,7 +90,7 @@ void showInfo() {
 // Kernel Version
   size = 32;
   char *kernel_version = malloc(size*sizeof(char));
-  getKernelVersion(kernel_version, size);
+  getKernelVersion(kernel_version, size - 1);
   kernel_version[strcspn(kernel_version, "\n")] = 0;
   printf("Kernel Version: %s\n", kernel_version);
 
@@ -126,9 +126,9 @@ void showExtra() {
   cpu_user_time[strcspn(cpu_user_time, "\n")] = 0;
   cpu_system_time[strcspn(cpu_system_time, "\n")] = 0;
   cpu_idle_time[strcspn(cpu_idle_time, "\n")] = 0;
-  printf("CPU User Time: %s [USER_HZ]\n", cpu_user_time);
-  printf("CPU System Time: %s [USER_HZ]\n", cpu_system_time);
-  printf("CPU Idle Time: %s [USER_HZ]\n", cpu_idle_time);
+  printf("CPU User Time: %s\n", cpu_user_time);
+  printf("CPU System Time: %s\n", cpu_system_time);
+  printf("CPU Idle Time: %s\n", cpu_idle_time);
 
 // Processes Created
   size = 16;
@@ -157,31 +157,23 @@ void showExtra() {
 
 
 void getDateTime(char *date_time, int size) {
-/*
-  //Variables
-  time_t rawtime;
-  struct tm *timeinfo;
-
-  //Obtengo el tiempo actual
-  time (&rawtime);
-  timeinfo = localtime (&rawtime);
-*/
+  //Obtengo el tiemmpo actual y lo guardo en las variables globales
   t = time(NULL);
   tm = *localtime(&t);
 
-  sprintf(date_time, "%d-%d-%d %d:%d:%d\n", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-  //Copio el string con la fecha/hora en date_time
-  //strcpy(date_time, asctime(localtime(&result)));
+  //Copio los datos obtenidos en el string "date_time"
+  snprintf(date_time, size, "%d-%d-%d %d:%d:%d\n", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
 void getStartupDateTime(char *startup_date_time, int size) {
+  //Le agrego al tiempo obtenido
   tm.tm_sec -= getUptimeSeconds();
-  mktime(&tm);
-  sprintf(startup_date_time, "%d-%d-%d %d:%d:%d\n", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-  //Copio el string con la fecha/hora en date_time
-  //strcpy(startup_date_time, asctime(localtime(&result)));
+  //Normalizo la fecha
+  mktime(&tm);
+
+  //Copio los datos en "startup_date_time"
+  snprintf(startup_date_time, size, "%d-%d-%d %d:%d:%d\n", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
 int getUptimeSeconds() {
@@ -204,6 +196,8 @@ int getUptimeSeconds() {
   //Convierto el valor en segundos
   int uptime_en_segundos;
   sscanf(aux, "%d", &uptime_en_segundos);
+
+  fclose(file);
 
   //Devuelvo los segundos
   return uptime_en_segundos;
@@ -231,10 +225,12 @@ void getContextSwitch(char *context_switches, int size) {
     token = strtok(aux, divider);
     if(strcmp(token, "ctxt") == 0) {
         token = strtok(NULL, divider);
-        strcpy(context_switches, token);
+        strncpy(context_switches, token, size);
         break;
       }
     }
+
+    fclose(file);
 }
 
 void getProcessesCreated(char *processes_created, int size) {
@@ -262,10 +258,12 @@ void getProcessesCreated(char *processes_created, int size) {
     token = strtok(aux, divider);
     if(strcmp(token, "processes") == 0) {
       token = strtok(NULL, divider);
-      strcpy(processes_created, token);
+      strncpy(processes_created, token, size);
       break;
     }
   }
+
+  fclose(file);
 }
 
 void getCpuUsageTime(char *cpu_user_time, char *cpu_system_time, char *cpu_idle_time, int size) {
@@ -290,18 +288,18 @@ void getCpuUsageTime(char *cpu_user_time, char *cpu_system_time, char *cpu_idle_
 
   //El segundo token es el tiempo de cpu en procesos de usuario
   token = strtok(NULL, divider);
-  strcpy(cpu_user_time, token);
+  strncpy(cpu_user_time, token, size);
 
   //El tercer token no me sirve
   token = strtok(NULL, divider);
 
   //El cuarto token es el tiempo de cpu en procesos del sistema
   token = strtok(NULL, divider);
-  strcpy(cpu_system_time, token);
+  strncpy(cpu_system_time, token, size);
 
   //El quinto token es el tiempo de cpu en reposo
   token = strtok(NULL, divider);
-  strcpy(cpu_idle_time, token);
+  strncpy(cpu_idle_time, token, size);
 
   fclose(file);
 }
@@ -345,12 +343,14 @@ void getCpuInfo(char *cpu_type, char *cpu_model, int size) {
 
     if(strcmp(token, "vendor_id	") == 0) {
       token = strtok(NULL, divider);
-      strcpy(cpu_type, token);
+      strncpy(cpu_type, token, size);
     } else if(strcmp(token, "model name	") == 0) {
       token = strtok(NULL, divider);
-      strcpy(cpu_model, token);
+      strncpy(cpu_model, token, size);
     }
   }
+
+  fclose(file);
 }
 
 void getKernelVersion(char *kernel_version, int size) {
@@ -367,7 +367,7 @@ void getKernelVersion(char *kernel_version, int size) {
   fgets(aux, BUFFSIZE+1, file);
 
   //Corto una parte del string obtenido
-  strncpy(kernel_version, aux, 32);
+  strncpy(kernel_version, aux, size);
 
   fclose(file);
 }
@@ -383,35 +383,39 @@ void getUptime(char *uptime, int size) {
   int segundos = uptime_en_segundos - minutos*60;
 
   char aux[BUFFSIZE+1] = {0};
-  uptime[0] = '\0';
+  char uptime_aux[BUFFSIZE+1] = {0};
+
+  uptime_aux[0] = '\0';
 
   sprintf(aux, "%d", horas);
   if(horas < 10) {
-    strcat(uptime, "0");
-    strcat(uptime, aux);
-    strcat(uptime, ":");
+    strcat(uptime_aux, "0");
+    strcat(uptime_aux, aux);
+    strcat(uptime_aux, ":");
   } else {
-    strcat(uptime, aux);
-    strcat(uptime, ":");
+    strcat(uptime_aux, aux);
+    strcat(uptime_aux, ":");
   }
 
   sprintf(aux, "%d", minutos);
   if(minutos < 10) {
-    strcat(uptime, "0");
-    strcat(uptime, aux);
-    strcat(uptime, ":");
+    strcat(uptime_aux, "0");
+    strcat(uptime_aux, aux);
+    strcat(uptime_aux, ":");
   } else {
-    strcat(uptime, aux);
-    strcat(uptime, ":");
+    strcat(uptime_aux, aux);
+    strcat(uptime_aux, ":");
   }
 
   sprintf(aux, "%d", segundos);
   if(segundos < 10) {
-    strcat(uptime, "0");
-    strcat(uptime, aux);
+    strcat(uptime_aux, "0");
+    strcat(uptime_aux, aux);
   } else {
-    strcat(uptime, aux);
+    strcat(uptime_aux, aux);
   }
+
+  strncpy(uptime, uptime_aux, size);
 }
 
 void getFilesystems(char *filesystems, int size) {
@@ -432,7 +436,7 @@ void getFilesystems(char *filesystems, int size) {
   }
 
   cantidad_filesystems = cantidad_filesystems - 1;
-  sprintf(filesystems, "%d", cantidad_filesystems);
+  snprintf(filesystems, size, "%d", cantidad_filesystems);
 
   fclose(file);
 }
