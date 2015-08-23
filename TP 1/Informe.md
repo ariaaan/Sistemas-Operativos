@@ -1,4 +1,4 @@
- # Sistemas Operativos I
+# Sistemas Operativos I
 ### Trabajo Práctico I
 
 >**Alumno:** Giles García, Arian  
