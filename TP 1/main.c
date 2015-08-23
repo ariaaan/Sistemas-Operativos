@@ -309,7 +309,7 @@ void getMemoryInfo(char *total_memory, char *available_memory, int size) {
         //Total Memory
         sscanf(copy, "%s %d", buffer, &memTotal);
         snprintf(total_memory, size, "%d kB", memTotal);
-    } else if(strcmp(token, "MemAvailable") == 0) {
+    } else if(strcmp(token, "MemFree") == 0) {
         //Available Memmory
         sscanf(copy, "%s %d", buffer, &memAvailable);
         snprintf(available_memory, size, "%d kB", memAvailable);
