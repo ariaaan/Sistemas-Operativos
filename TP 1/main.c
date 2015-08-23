@@ -11,6 +11,7 @@ agrega la siguiente información:
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <time.h>
 
 #define BUFFSIZE 256
@@ -35,27 +36,162 @@ void getDiskInfo(char *disk_read, char *disk_write, int size);
 void getMemoryInfo(char *total_memory, char *available_memory, int size);
 void getLoadAvg(char *load_avg, int size);
 
+void printLoop(int interval, int duration);
+
 int getUptimeSeconds();
+
+void printUsage() {
+    printf("KSAMP Usage: ./ksamp [-s] [-l param_1 param_2]\n");
+}
 
 time_t t;
 struct tm tm;
 
 main(int argc, char *argv[]) {
 
+  int option = 0;
+  int interval = 0;
+  int duration = 0;
+
+  while ((option = getopt(argc, argv,"sl")) != -1) {
+    switch (option) {
+       case 's' :
+           showExtra();
+           exit(EXIT_SUCCESS);
+       case 'l' :
+           if(optind + 1 > argc - 1) {
+              printUsage();
+              exit(EXIT_FAILURE);
+           } else {
+             interval = atoi(argv[optind]);
+             duration = atoi(argv[optind+1]);
+             printLoop(interval, duration);
+             exit(EXIT_SUCCESS);
+           }
+       default:
+           printUsage();
+           exit(EXIT_FAILURE);
+    }
+  }
+
   showInfo();
 
-  showExtra();
-
-  showMore();
 
   return 0;
 }
 
-void showMore() {
-// Title
+void printLoop(int interval, int duration) {
+    int count = (int) duration/interval;
+
+    int i;
+    for(i = 0; i < count; i++) {
+      showMore();
+      sleep(interval);
+    }
+
+    showMore();
+}
+
+void showInfo() {
+// New line
   printf("\n");
-  printf("More: \n");
-  printf("---- \n\n");
+
+// Hostname
+  int size = 64;
+  char *hostname = malloc(size*sizeof(char));
+  getHostname(hostname, size);
+  hostname[strcspn(hostname, "\n")] = 0;
+  printf("Hostname: %s\n", hostname);
+
+// Date - Time
+  size = 32;
+  char *date_time = malloc(size*sizeof(char));
+  getDateTime(date_time, size);
+  date_time[strcspn(date_time, "\n")] = 0;
+  printf("Date and Time: %s\n", date_time);
+
+  printf("\n");
+
+// CPU Info
+  size = 256;
+  char *cpu_type = malloc(size*sizeof(char));
+  char *cpu_model = malloc(size*sizeof(char));
+  getCpuInfo(cpu_type, cpu_model, size);
+  cpu_type[strcspn(cpu_type, "\n")] = 0;
+  cpu_model[strcspn(cpu_model, "\n")] = 0;
+  printf("CPU Type: %s\n", cpu_type);
+  printf("CPU Model: %s\n", cpu_model);
+
+// Kernel Version
+  size = 32;
+  char *kernel_version = malloc(size*sizeof(char));
+  getKernelVersion(kernel_version, size - 1);
+  kernel_version[strcspn(kernel_version, "\n")] = 0;
+  printf("Kernel Version: %s\n", kernel_version);
+
+// Up Time
+  size = 16;
+  char *uptime = malloc(size*sizeof(char));
+  getUptime(uptime, size);
+  uptime[strcspn(uptime, "\n")] = 0;
+  printf("Uptime: %s\n", uptime);
+
+// File Systems
+  size = 8;
+  char *filesystems = malloc(size*sizeof(char));
+  getFilesystems(filesystems, size);
+  filesystems[strcspn(filesystems, "\n")] = 0;
+  printf("File Systems: %s\n", filesystems);
+
+// New line
+  printf("\n");
+}
+
+void showExtra() {
+// New line
+  printf("\n");
+
+// CPU Usage Time
+  int size = 16;
+  char *cpu_user_time = malloc(size*sizeof(char));
+  char *cpu_system_time = malloc(size*sizeof(char));
+  char *cpu_idle_time = malloc(size*sizeof(char));
+  getCpuUsageTime(cpu_user_time, cpu_system_time, cpu_idle_time, size);
+  cpu_user_time[strcspn(cpu_user_time, "\n")] = 0;
+  cpu_system_time[strcspn(cpu_system_time, "\n")] = 0;
+  cpu_idle_time[strcspn(cpu_idle_time, "\n")] = 0;
+  printf("CPU User Time: %s\n", cpu_user_time);
+  printf("CPU System Time: %s\n", cpu_system_time);
+  printf("CPU Idle Time: %s\n", cpu_idle_time);
+
+// Processes Created
+  size = 16;
+  char *processes_created = malloc(size*sizeof(char));
+  getProcessesCreated(processes_created, size);
+  processes_created[strcspn(processes_created, "\n")] = 0;
+  printf("Processes Created: %s\n", processes_created);
+
+// Context Switches
+  size = 16;
+  char *context_switches = malloc(size*sizeof(char));
+  getContextSwitch(context_switches, size);
+  context_switches[strcspn(context_switches, "\n")] = 0;
+  printf("Context Switches: %s\n", context_switches);
+
+//Startup Date and Time
+  size = 32;
+  char *startup_date_time = malloc(size*sizeof(char));
+  getStartupDateTime(startup_date_time, size);
+  startup_date_time[strcspn(startup_date_time, "\n")] = 0;
+  printf("Startup Date and Time: %s\n", startup_date_time);
+
+//New Line
+  printf("\n");
+}
+
+void showMore() {
+// New line
+  printf("\n");
 
 // Disk Read-Write
   int size = 16;
@@ -183,108 +319,6 @@ void getDiskInfo(char *disk_read, char *disk_write, int size) {
 
     fclose(file);
 }
-
-void showInfo() {
-// Title
-  printf("\n");
-  printf("Info: \n");
-  printf("----- \n\n");
-
-// Hostname
-  int size = 64;
-  char *hostname = malloc(size*sizeof(char));
-  getHostname(hostname, size);
-  hostname[strcspn(hostname, "\n")] = 0;
-  printf("Hostname: %s\n", hostname);
-
-// Date - Time
-  size = 32;
-  char *date_time = malloc(size*sizeof(char));
-  getDateTime(date_time, size);
-  date_time[strcspn(date_time, "\n")] = 0;
-  printf("Date and Time: %s\n", date_time);
-
-  printf("\n");
-
-// CPU Info
-  size = 256;
-  char *cpu_type = malloc(size*sizeof(char));
-  char *cpu_model = malloc(size*sizeof(char));
-  getCpuInfo(cpu_type, cpu_model, size);
-  cpu_type[strcspn(cpu_type, "\n")] = 0;
-  cpu_model[strcspn(cpu_model, "\n")] = 0;
-  printf("CPU Type: %s\n", cpu_type);
-  printf("CPU Model: %s\n", cpu_model);
-
-// Kernel Version
-  size = 32;
-  char *kernel_version = malloc(size*sizeof(char));
-  getKernelVersion(kernel_version, size - 1);
-  kernel_version[strcspn(kernel_version, "\n")] = 0;
-  printf("Kernel Version: %s\n", kernel_version);
-
-// Up Time
-  size = 16;
-  char *uptime = malloc(size*sizeof(char));
-  getUptime(uptime, size);
-  uptime[strcspn(uptime, "\n")] = 0;
-  printf("Uptime: %s\n", uptime);
-
-// File Systems
-  size = 8;
-  char *filesystems = malloc(size*sizeof(char));
-  getFilesystems(filesystems, size);
-  filesystems[strcspn(filesystems, "\n")] = 0;
-  printf("File Systems: %s\n", filesystems);
-
-// New line
-  printf("\n");
-}
-
-void showExtra() {
-// Title
-  printf("\n");
-  printf("Extra: \n");
-  printf("------ \n\n");
-
-// CPU Usage Time
-  int size = 16;
-  char *cpu_user_time = malloc(size*sizeof(char));
-  char *cpu_system_time = malloc(size*sizeof(char));
-  char *cpu_idle_time = malloc(size*sizeof(char));
-  getCpuUsageTime(cpu_user_time, cpu_system_time, cpu_idle_time, size);
-  cpu_user_time[strcspn(cpu_user_time, "\n")] = 0;
-  cpu_system_time[strcspn(cpu_system_time, "\n")] = 0;
-  cpu_idle_time[strcspn(cpu_idle_time, "\n")] = 0;
-  printf("CPU User Time: %s\n", cpu_user_time);
-  printf("CPU System Time: %s\n", cpu_system_time);
-  printf("CPU Idle Time: %s\n", cpu_idle_time);
-
-// Processes Created
-  size = 16;
-  char *processes_created = malloc(size*sizeof(char));
-  getProcessesCreated(processes_created, size);
-  processes_created[strcspn(processes_created, "\n")] = 0;
-  printf("Processes Created: %s\n", processes_created);
-
-// Context Switches
-  size = 16;
-  char *context_switches = malloc(size*sizeof(char));
-  getContextSwitch(context_switches, size);
-  context_switches[strcspn(context_switches, "\n")] = 0;
-  printf("Context Switches: %s\n", context_switches);
-
-//Startup Date and Time
-  size = 32;
-  char *startup_date_time = malloc(size*sizeof(char));
-  getStartupDateTime(startup_date_time, size);
-  startup_date_time[strcspn(startup_date_time, "\n")] = 0;
-  printf("Startup Date and Time: %s\n", startup_date_time);
-
-//New Line
-  printf("\n");
-}
-
 
 void getDateTime(char *date_time, int size) {
   //Obtengo el tiemmpo actual y lo guardo en las variables globales
