@@ -37,7 +37,7 @@ void getMemoryInfo(char *total_memory, char *available_memory, int size);
 void getLoadAvg(char *load_avg, int size);
 
 void printLoop(int interval, int duration);
-
+void secondsToTime(char *time_string, int seconds);
 int getUptimeSeconds();
 
 void printUsage() {
@@ -90,6 +90,49 @@ void printLoop(int interval, int duration) {
     }
 
     showMore();
+}
+
+void secondsToTime(char *time_string, int seconds) {
+  //Lo paso a formato hh:mm.ss
+  int horas = seconds / 3600;
+  seconds = seconds - 3600*horas;
+  int minutos = seconds / 60;
+  int segundos = seconds - minutos*60;
+
+  char aux[BUFFSIZE+1] = {0};
+  char string[BUFFSIZE+1] = {0};
+
+  string[0] = '\0';
+
+  sprintf(aux, "%d", horas);
+  if(horas < 10) {
+    strcat(string, "0");
+    strcat(string, aux);
+    strcat(string, ":");
+  } else {
+    strcat(string, aux);
+    strcat(string, ":");
+  }
+
+  sprintf(aux, "%d", minutos);
+  if(minutos < 10) {
+    strcat(string, "0");
+    strcat(string, aux);
+    strcat(string, ":");
+  } else {
+    strcat(string, aux);
+    strcat(string, ":");
+  }
+
+  sprintf(aux, "%d", segundos);
+  if(segundos < 10) {
+    strcat(string, "0");
+    strcat(string, aux);
+  } else {
+    strcat(string, aux);
+  }
+
+  strcpy(time_string, string);
 }
 
 void showInfo() {
@@ -436,6 +479,7 @@ void getCpuUsageTime(char *cpu_user_time, char *cpu_system_time, char *cpu_idle_
 
   //Strings
   char stats[BUFFSIZE+1] = {0};
+  char aux[BUFFSIZE+1] = {0};
 
   //Abro el archivo "/proc/sys/kernel/hostname"
   file = fopen("/proc/stat","r");
@@ -451,19 +495,34 @@ void getCpuUsageTime(char *cpu_user_time, char *cpu_system_time, char *cpu_idle_
   token = strtok(stats, divider);
 
   //El segundo token es el tiempo de cpu en procesos de usuario
+  int cpu1;
   token = strtok(NULL, divider);
-  strncpy(cpu_user_time, token, size);
+  sscanf(token, "%d", &cpu1);
+  cpu1 = cpu1/100;
+  secondsToTime(aux, cpu1);
+
+  strncpy(cpu_user_time, aux, size);
 
   //El tercer token no me sirve
   token = strtok(NULL, divider);
 
   //El cuarto token es el tiempo de cpu en procesos del sistema
+  int cpu2;
   token = strtok(NULL, divider);
-  strncpy(cpu_system_time, token, size);
+  sscanf(token, "%d", &cpu2);
+  cpu2 = cpu2/100;
+  secondsToTime(aux, cpu2);
+
+  strncpy(cpu_system_time, aux, size);
 
   //El quinto token es el tiempo de cpu en reposo
+  int cpu3;
   token = strtok(NULL, divider);
-  strncpy(cpu_idle_time, token, size);
+  sscanf(token, "%d", &cpu3);
+  cpu3 = cpu3/100;
+  secondsToTime(aux, cpu3);
+
+  strncpy(cpu_idle_time, aux, size);
 
   fclose(file);
 }
@@ -541,47 +600,10 @@ void getKernelVersion(char *kernel_version, int size) {
 void getUptime(char *uptime, int size) {
   //Obtengo el uptime en segundos
   int uptime_en_segundos = getUptimeSeconds();
-
-  //Lo paso a formato hh:mm.ss
-  int horas = uptime_en_segundos / 3600;
-  uptime_en_segundos = uptime_en_segundos - 3600*horas;
-  int minutos = uptime_en_segundos / 60;
-  int segundos = uptime_en_segundos - minutos*60;
-
   char aux[BUFFSIZE+1] = {0};
-  char uptime_aux[BUFFSIZE+1] = {0};
 
-  uptime_aux[0] = '\0';
-
-  sprintf(aux, "%d", horas);
-  if(horas < 10) {
-    strcat(uptime_aux, "0");
-    strcat(uptime_aux, aux);
-    strcat(uptime_aux, ":");
-  } else {
-    strcat(uptime_aux, aux);
-    strcat(uptime_aux, ":");
-  }
-
-  sprintf(aux, "%d", minutos);
-  if(minutos < 10) {
-    strcat(uptime_aux, "0");
-    strcat(uptime_aux, aux);
-    strcat(uptime_aux, ":");
-  } else {
-    strcat(uptime_aux, aux);
-    strcat(uptime_aux, ":");
-  }
-
-  sprintf(aux, "%d", segundos);
-  if(segundos < 10) {
-    strcat(uptime_aux, "0");
-    strcat(uptime_aux, aux);
-  } else {
-    strcat(uptime_aux, aux);
-  }
-
-  strncpy(uptime, uptime_aux, size);
+  secondsToTime(aux, uptime_en_segundos);
+  strncpy(uptime, aux, size);
 }
 
 void getFilesystems(char *filesystems, int size) {
