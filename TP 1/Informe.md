@@ -5,7 +5,7 @@
 **Profesor:** Ing. Pablo Martínez
 
 ## Introducción
-El trabajo consiste en realizar un pequeño programa escrito en lenguaje 'C', que permita al usuario conocer cierta información acerca de su PC, asi como datos del CPU, memoria, kernel, etc. Para ello, se utilizaran los diferentes archivos que se encuentran dentro del directorio `/proc`. Debemos buscar la información pedida, parsear los datos necesarios y imprimir por el stdout de la terminal de Linux.
+El trabajo consiste en realizar un pequeño programa escrito en lenguaje 'C', que permita al usuario conocer cierta información acerca de su PC, asi como datos del CPU, memoria, kernel, etc. Para ello, se utilizaran los diferentes archivos que se encuentran dentro del directorio `/proc`. Debemos buscar la información pedida, parsear los datos necesarios y imprimir por el `stdout` de la terminal de Linux.
 
 ## Desarrollo
 #### Parte A
