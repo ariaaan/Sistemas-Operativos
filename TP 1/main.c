@@ -1,11 +1,11 @@
 /*
-Escriba una segunda versión del programa que imprima la misma información
-que la versión por defecto, pero en caso de invocarse con la opción -s,
-agrega la siguiente información:
-- Cantidad de tiempo de CPU utilizado para usuarios, sistema y proceso idle.
-- Cantidad de cambios de contexto.
-- Fecha y hora cuando el sistema fue iniciado.
-- Número de procesos creados desde el inicio del sistema.
+* Sistemas Operativos I.
+* ----------------------
+*
+* Trabajo Práctico Nº 1.
+* 
+* Alumno: Giles García, Arian.
+* Matrícula: 36201187.
 */
 
 #include <stdio.h>
