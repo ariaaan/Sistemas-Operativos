@@ -56,10 +56,15 @@ main(int argc, char *argv[]) {
   while ((option = getopt(argc, argv,"sl")) != -1) {
     switch (option) {
        case 's' :
-           showExtra();
-           exit(EXIT_SUCCESS);
+           if(argc == 2) {
+              showExtra();
+              exit(EXIT_SUCCESS);
+           } else {
+              printUsage();
+              exit(EXIT_FAILURE);
+           }
        case 'l' :
-           if(optind + 1 > argc - 1) {
+           if((optind + 1 > argc - 1) || (argc != 4)) {
               printUsage();
               exit(EXIT_FAILURE);
            } else {
