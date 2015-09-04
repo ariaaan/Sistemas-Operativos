@@ -21,6 +21,7 @@
 */
 
 void get_path(char *command);
+void parse_exit(char *command);
 
 /*
 * Declaración de variables globales
@@ -79,6 +80,8 @@ int main(int argc, char **argv) {
 		printf("arian@baash: ");
    		scanf("%s", command);
 
+   		parse_exit(command);
+
    		get_path(command);
 	}
 
@@ -89,6 +92,13 @@ int main(int argc, char **argv) {
 /*
 * Definición de funciones
 */
+
+void parse_exit(char *command) {
+	if(strcmp(command, "exit") == 0) {
+		printf("\n");
+		exit(1);
+	}
+}
 
 void get_path(char *command) {
 
