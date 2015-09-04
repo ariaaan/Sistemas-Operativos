@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define BUFFERSIZE 256
 #define PATHLENGTH 32
@@ -21,7 +22,10 @@
 */
 
 void get_path(char *command);
+void parse_cd(char *command);
+void parse_pwd(char *command);
 void parse_exit(char *command);
+void parse_command(char *command);
 
 /*
 * Declaración de variables globales
@@ -33,16 +37,14 @@ char path_array[PATHLENGTH][BUFFERSIZE];
 //Contador de cantidad de rutas en PATH
 int length = 0;
 
+//Variable almacena en directorio actual
+char cwd[1024];
+
 int main(int argc, char **argv) {
 
 	//Busco el current working directory y lo guardo
-	char cwd[1024];
-   	if (getcwd(cwd, sizeof(cwd)) != NULL) {
-    	fprintf(stdout, "\nCurrent Dir: %s\n\n", cwd);
-   	} else {
-       	perror("getcwd() error");
-   	}
-
+   	getcwd(cwd, sizeof(cwd));
+    printf("\nCurrent Dir: %s\n\n", cwd);
 
 	//Guardo en path el valor de la variable de entorno PATH.
 	char *path;
@@ -69,20 +71,16 @@ int main(int argc, char **argv) {
 		token = strtok (NULL, divider);
 	}
 
-	//Variable que indica si hay que terminar el programa
-	int exit = 0;
-
 	//Varaible auxiliar que almacena el comando ingresado
 	char command[BUFFERSIZE];
 
 	//Loop principal del 'baash'
-	while(!exit) {
+	while(1) {
 		printf("arian@baash: ");
-   		scanf("%s", command);
+   		fgets(command, BUFFERSIZE, stdin);  
 
-   		parse_exit(command);
-
-   		get_path(command);
+   		//Parseo comandos
+   		parse_command(command);
 	}
 
 	return 0;
@@ -93,10 +91,84 @@ int main(int argc, char **argv) {
 * Definición de funciones
 */
 
+void parse_command(char *command) {
+   	//Veo si hay que salir
+   	parse_exit(command);
+
+   	//Veo si hay que cambiar de directorio
+   	parse_cd(command);
+
+   	//Veo si pidieron el 'pwd'
+   	parse_pwd(command);
+}
+
+void parse_cd(char *command) {
+	//Copio el comando en aux
+	char aux[BUFFERSIZE];
+	strcpy(aux, command);
+	
+	//Divido en " " 
+	char *divider = " ";
+  	char *token;
+
+  	//Leo la primera parte
+    token = strtok(aux, divider);
+
+    //Si es 'cd' busco el directorio
+    if(strcmp(token, "cd") == 0) {
+    	//Obtengo el directorio
+		token = strtok(NULL, divider);
+
+		//Borro en '\n' del final.
+		token[strlen (token) - 1] = '\0';
+
+		if(chdir(token) != -1) {
+			//Busco el current working directory y lo guardo
+   			getcwd(cwd, sizeof(cwd));
+			printf("Directory changed to: %s\n", cwd);
+		} else {
+			printf("Error %d.\n", errno);
+		}
+	}
+}
+
 void parse_exit(char *command) {
-	if(strcmp(command, "exit") == 0) {
+	//Copio el comando en aux
+	char aux[BUFFERSIZE];
+	strcpy(aux, command);
+
+	//Si tiene '\n' al final, la borro
+	if (aux[strlen (aux) - 1] == '\n') {
+    	aux[strlen (aux) - 1] = '\0';
+    }
+
+	//Ver si se apreto Ctrl+D
+	if(feof(stdin)) {
+		printf("\n\n");
+		exit(1);
+	}
+
+	//O si se escribio el commando exit
+	if(strcmp(aux, "exit") == 0) {
 		printf("\n");
 		exit(1);
+	}
+}
+
+void parse_pwd(char *command) {
+	//Copio el comando en aux
+	char aux[BUFFERSIZE];
+	strcpy(aux, command);
+
+	//Si tiene '\n' al final, la borro
+	if (aux[strlen (aux) - 1] == '\n') {
+    	aux[strlen (aux) - 1] = '\0';
+    }
+
+	//O si se escribio el commando exit
+	if(strcmp(aux, "pwd") == 0) {
+		getcwd(cwd, sizeof(cwd));
+    	printf("Current Dir: %s\n", cwd);
 	}
 }
 
