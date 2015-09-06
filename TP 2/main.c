@@ -13,6 +13,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h> 
 
 #define BUFFERSIZE 256
 #define PATHLENGTH 32
@@ -26,6 +27,7 @@ void parse_cd(char *command);
 void parse_pwd(char *command);
 void parse_exit(char *command);
 void parse_command(char *command);
+void parse_all(char *command);
 
 /*
 * Declaración de variables globales
@@ -80,7 +82,7 @@ int main(int argc, char **argv) {
    		fgets(command, BUFFERSIZE, stdin);  
 
    		//Parseo comandos
-   		parse_command(command);
+   		parse_all(command);
 	}
 
 	return 0;
@@ -91,7 +93,10 @@ int main(int argc, char **argv) {
 * Definición de funciones
 */
 
-void parse_command(char *command) {
+void parse_all(char *command) {
+	//Veo si encuentro el real path del ejecutable
+	parse_command(command);
+
    	//Veo si hay que salir
    	parse_exit(command);
 
@@ -100,6 +105,33 @@ void parse_command(char *command) {
 
    	//Veo si pidieron el 'pwd'
    	parse_pwd(command);
+}
+
+void parse_command(char *command) {
+	//Copio el comando en aux
+	char aux[BUFFERSIZE];
+	strcpy(aux, command);
+
+	//Divido en " " 
+	char *divider = " ";
+  	char *token;
+
+  	//Leo la primera parte
+    token = strtok(aux, divider);
+
+    //Variables auxiliares
+    char real_path[PATH_MAX + 1]; 
+    char *control;
+
+    //Busco el path real
+    control = realpath(token, real_path);
+
+    if(real_path != NULL) {
+		printf("Real Path: %s", real_path);
+    } else {
+    	printf("Error parsing path\n");
+    }
+
 }
 
 void parse_cd(char *command) {
