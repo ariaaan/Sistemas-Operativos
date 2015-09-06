@@ -22,16 +22,18 @@
 * Declaración de funciones
 */
 
-void get_path(char *command);
 void get_path_entries();
+
 void builtin_cd(char *path);
 void builtin_pwd();
+
 void find_command();
 int find_command_in_path(char *path, int size);
 int find_command_absolute_path(char *path, int size);
-void parse_command();
-void parse_arguments(char *command);
+
 void parse_all(char *command);
+void parse_arguments(char *command);
+void parse_command();
 
 /*
 * Declaración de variables globales
