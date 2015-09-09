@@ -52,6 +52,8 @@ int length = 0;
 //Variable almacena en directorio actual
 char cwd[1024];
 
+//Almacena $HOME para mostrar en prompt 
+char *home_var;
 
 /*
 * Inicio del programa
@@ -61,13 +63,29 @@ int main(int argc, char **argv) {
 	//Obtengo el path y guardo sus entradas
 	get_path_entries();
 
+	//Obtengo el PWD
+	getcwd(cwd, sizeof(cwd));
+	char *current_dir;
+
+	//Obtengo $HOME
+	home_var = getenv("HOME");
+
 	//Varaible auxiliar que almacena el comando ingresado
 	char command[BUFFERSIZE];
 
 	//Loop principal del 'baash'
 	while(1) {
-		//Imprimo prompt y obtengo comandos
-		printf("user@baash: ");
+		//Auxiliar, copio la dirección de cwd
+		current_dir = cwd;
+
+		//Veo si puedo cambiar '$HOME' por '~' 
+		if(strncmp(cwd, home_var, strlen(home_var)) == 0) {
+			current_dir = current_dir + strlen(home_var);
+			printf("user@baash:~%s$ ", current_dir);
+		} else {
+			printf("user@baash:%s$ ", current_dir);
+		}
+
    		fgets(command, BUFFERSIZE, stdin);  
 
    		//Ver si se apreto Ctrl+D
@@ -211,6 +229,9 @@ void parse_command() {
 		if(my_argc == 2) {
 			//Llamo a la función bultin 'cd' y le paso el argumento
 			builtin_cd(my_argv[1]);
+		} else if(my_argc == 1) {
+			//Llamo a builtin_cd con path vacio, para que cambia a $HOME
+			builtin_cd("");
 		} else {
 			//Si se le pasaron mas argumentos muestro el uso de la función
 			printf("cd usage: cd [path]\n");
@@ -387,19 +408,29 @@ void builtin_cd(char *path) {
 	//Copio el comando en aux
 	char aux[BUFFERSIZE];
 	strcpy(aux, path);
-	
-	//Si tiene '\n' al final, la borro
-	if (path[strlen (path) - 1] == '\n') {
-    	path[strlen (path) - 1] = '\0';
-    }
 
-	if(chdir(path) != -1) {
-		//Busco el current working directory y lo guardo
-   		getcwd(cwd, sizeof(cwd));
-		printf("Directory changed to: %s\n", cwd);
+	if(strcmp(path, "") == 0) {
+		//Si se mando NULL, debo cambiar al $HOME
+		if(chdir(home_var) != -1) {
+			//Busco el current working directory y lo guardo
+	   		getcwd(cwd, sizeof(cwd));
+		} else {
+			printf("Error %d. Couldn't change directory\n", errno);
+		}	
 	} else {
-		printf("Error %d. Couldn't change directory\n", errno);
+		//Si tiene '\n' al final, la borro
+		if (path[strlen (path) - 1] == '\n') {
+	    	path[strlen (path) - 1] = '\0';
+	    }
+
+		if(chdir(path) != -1) {
+			//Busco el current working directory y lo guardo
+	   		getcwd(cwd, sizeof(cwd));
+		} else {
+			printf("Error %d. Couldn't change directory\n", errno);
+		}	
 	}
+	
 	
 }
 
