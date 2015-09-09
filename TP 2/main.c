@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 	//Obtengo el path y guardo sus entradas
 	get_path_entries();
 
-	//Obtengoe l PWD
+	//Obtengo el PWD
 	getcwd(cwd, sizeof(cwd));
 	char *current_dir;
 
