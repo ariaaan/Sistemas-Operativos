@@ -51,7 +51,10 @@ int length = 0;
 
 //Variable almacena en directorio actual
 char cwd[1024];
+char cwd_prompt[1024];
 
+//Almacena $HOME para mostrar en prompt 
+char *home_var;
 
 /*
 * Inicio del programa
@@ -61,13 +64,21 @@ int main(int argc, char **argv) {
 	//Obtengo el path y guardo sus entradas
 	get_path_entries();
 
+	//Obtengo $HOME
+	home_var = getenv("HOME");
+
 	//Varaible auxiliar que almacena el comando ingresado
 	char command[BUFFERSIZE];
 
 	//Loop principal del 'baash'
 	while(1) {
-		//Imprimo prompt y obtengo comandos
-		printf("user@baash: ");
+		//Veo si puedo cambiar '$HOME' por '~' 
+		if(strncmp(cwd, home_var, strlen(home_var)) == 0) {
+			printf("user@baash ~: ");
+		} else {
+			printf("user@baash: ");
+		}
+
    		fgets(command, BUFFERSIZE, stdin);  
 
    		//Ver si se apreto Ctrl+D
