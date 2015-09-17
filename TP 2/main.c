@@ -245,17 +245,18 @@ void parse_command() {
 
     //Priemro veo si se llamo a alguna funcion builtin
 	if(strcmp(command, "cd") == 0) {
-		//Si se llamo a 'cd' con un argumento
-		if(my_argc == 2) {
-			//Llamo a la función bultin 'cd' y le paso el argumento
-			builtin_cd(my_argv[1]);
-		} else if(my_argc == 1) {
-			//Llamo a builtin_cd con path vacio, para que cambia a $HOME
-			builtin_cd("");
-		} else {
-			//Si se le pasaron mas argumentos muestro el uso de la función
-			printf("cd usage: cd [path]\n");
+		char cd_path[BUFFERSIZE] = "";
+		int i;
+		for(i = 1; i < my_argc; i++) {
+			if(i == 1) {
+				strcat(cd_path, my_argv[i]);
+			} else {
+				strcat(cd_path, " ");
+				strcat(cd_path, my_argv[i]);
+			}
 		}
+
+		builtin_cd(cd_path);
 	} else if(strcmp(command, "pwd") == 0) {
 		//Si se llama a 'pwd' sin argumentos
 		if(my_argc == 1) {
