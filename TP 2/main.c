@@ -55,6 +55,11 @@ char cwd[1024];
 //Almacena $HOME para mostrar en prompt 
 char *home_var;
 
+
+#define RESET   "\033[0m"					/* Reset */
+#define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
+
+
 /*
 * Inicio del programa
 */
@@ -87,9 +92,9 @@ int main(int argc, char **argv) {
 		//Veo si puedo cambiar '$HOME' por '~' 
 		if(strncmp(cwd, home_var, strlen(home_var)) == 0) {
 			current_dir = current_dir + strlen(home_var);
-			printf("user@baash:~%s$ ", current_dir);
+			printf(BOLDGREEN "user@baash:~%s$ " RESET, current_dir);
 		} else {
-			printf("user@baash:%s$ ", current_dir);
+			printf(BOLDGREEN "user@baash:%s$ " RESET, current_dir);
 		}
 
    		fgets(command, BUFFERSIZE, stdin);  
@@ -326,7 +331,7 @@ void find_command() {
 		if(f == 0) {
 			pid_t child_pid = getpid();
 			my_argv[my_argc] = NULL;
-			
+
 			execv(my_argv[0], my_argv);
 
 			exit(1);
