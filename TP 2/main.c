@@ -324,12 +324,18 @@ void find_command() {
 
 	//Si lo encontre
 	if(found) {
+		int ampersand = 0;
+
+		//Veo si se agrego el '&'
+		if(strcmp(my_argv[my_argc-1], "&") == 0) {
+			ampersand = 1;
+			my_argv[my_argc-1] = NULL;
+		} 
 
 		pid_t f = fork();
 		strcpy(my_argv[0], path);
 
 		if(f == 0) {
-			pid_t child_pid = getpid();
 			my_argv[my_argc] = NULL;
 
 			execv(my_argv[0], my_argv);
@@ -337,8 +343,10 @@ void find_command() {
 			exit(1);
 		}
 
-		int status;
-		wait(&status);
+		if(!ampersand) {
+			int status;
+			wait(&status);
+		}	
 
 	} else {
 		//Sino imprimo error
