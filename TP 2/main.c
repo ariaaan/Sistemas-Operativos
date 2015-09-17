@@ -41,7 +41,7 @@ void parse_command();
 
 //Cantidad de argumentos y arrgelo de argumentos
 int my_argc;
-char my_argv[BUFFERSIZE][BUFFERSIZE];
+char *my_argv[BUFFERSIZE];
 
 //Array donde voy a guardar las rutas de la variable PATH
 char path_array[PATHLENGTH][BUFFERSIZE];
@@ -60,6 +60,12 @@ char *home_var;
 */
 
 int main(int argc, char **argv) {
+	//Aloco memoria
+	int i;
+	for (i = 0; i < 256; ++i) {
+  		my_argv[i] = malloc(256*sizeof(char));
+	}
+
 	//Obtengo el path y guardo sus entradas
 	get_path_entries();
 
@@ -193,6 +199,15 @@ void parse_arguments(char *command) {
     }
 
     my_argc = count;
+
+    int i;
+
+    for(i = 0; i < my_argc; i++) {
+    	//Si tiene '\n' al final, la borro
+		if (my_argv[i][strlen (my_argv[i]) - 1] == '\n') {
+	    	my_argv[i][strlen (my_argv[i]) - 1] = '\0';
+	    }
+    }
 }
 
 /*
@@ -304,8 +319,22 @@ void find_command() {
 
 	//Si lo encontre
 	if(found) {
-		//Imprimo donde
-		printf("File is in: %s\n", path);
+
+		pid_t f = fork();
+		strcpy(my_argv[0], path);
+
+		if(f == 0) {
+			pid_t child_pid = getpid();
+			my_argv[my_argc] = NULL;
+			
+			execv(my_argv[0], my_argv);
+
+			exit(1);
+		}
+
+		int status;
+		wait(&status);
+
 	} else {
 		//Sino imprimo error
 		printf("Couldn't find file\n");
