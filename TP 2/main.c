@@ -209,26 +209,18 @@ void parse_all(char *command) {
 
           	//Ejecuto
           	execv(my_argv[0], my_argv);
-//          	execlp("ls","ls", "-l", NULL);
-          	perror("error_child");       /* still around?  exec failed           */
           	_exit(1);
-		} else {
-			//Ciero el WRITE_END del pipe
-			close(fd[1]);   
-			//Hago que 0 sea el REAND_END del pipe  
-          	dup2(fd[0],0);  
-          	//Cierro los fd que sobran
-          	close(fd[0]);   
+		} 
 
-          	//Ejecuto
-			execv(my_argv_2[0], my_argv_2);
-          	perror("error_parent");       /* still around?  exec failed           */
+		//Ciero el WRITE_END del pipe
+		close(fd[1]);   
+		//Hago que 0 sea el REAND_END del pipe  
+      	dup2(fd[0],0);  
+      	//Cierro los fd que sobran
+      	close(fd[0]);   
 
-		}
-
-
-
-
+      	//Ejecuto
+		execv(my_argv_2[0], my_argv_2);
 	} else {
 		//Guardo los argumentos en argv y argc
 		parse_arguments(command, my_argv, &my_argc);
