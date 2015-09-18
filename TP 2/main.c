@@ -231,6 +231,8 @@ void parse_all(char *command) {
 			int fd[2];
 			pid_t pid_1;
 			pid_t pid_2;
+			int status_1;
+			int status_2;
 
 			if(pipe(fd) == -1) {
 				printf("Error creating pipe\n");
@@ -242,13 +244,6 @@ void parse_all(char *command) {
 				exit(1);
 			} else if (pid_1 == 0) {
 				//Si estoy en el hijo, creo otro hijo
-
-				if((pid_2 = fork()) == -1) {
-					printf("Error creating child process\n");
-					exit(1);
-				} else if (pid_2 == 0) {
-					//Nieto de Padre
-
 					//Ciero el READ_END del pipe
 					close(fd[0]);
 					//Hago que 1 sea el WRITE_END del pipe              
@@ -259,25 +254,29 @@ void parse_all(char *command) {
 		          	//Ejecuto
 		          	execv(my_argv[0], my_argv);
 		          	exit(1);
-				} else {
-					//Hijo del Padre
-					int status;
-					wait(&status);
-
-					//Ciero el WRITE_END del pipe
-					close(fd[1]);   
-					//Hago que 0 sea el REAND_END del pipe  
-			      	dup2(fd[0],0);  
-			      	//Cierro los fd que sobran
-			      	close(fd[0]);   
-
-			      	//Ejecuto
-					execv(my_argv_2[0], my_argv_2);
+		    } else {
+		    	if((pid_2 = fork()) == -1) {
+					printf("Error creating child process\n");
 					exit(1);
-				}
-			} 
-			//Padre
+				} else if (pid_2 == 0) {
+					//Otro hijo del Padre
+						//Ciero el WRITE_END del pipe
+						close(fd[1]);   
+						//Hago que 0 sea el REAND_END del pipe  
+				      	dup2(fd[0],0);  
+				      	//Cierro los fd que sobran
+				      	close(fd[0]);   
 
+				      	//Ejecuto
+						execv(my_argv_2[0], my_argv_2);
+						exit(1);
+		    	} else {
+		            if(waitpid(pid_1, &status_1, 0) == -1 ) {
+  						perror("waitpid");
+					}
+		    	}
+		    }
+			
 		}
 	} else {
 		//Guardo los argumentos en argv y argc
