@@ -28,12 +28,15 @@ void builtin_cd(char *path);
 void builtin_pwd();
 
 void find_command();
-int find_command_in_path(char *path, int size);
-int find_command_absolute_path(char *path, int size);
+int find_command_in_path(char *path, int size, char *command);
+int find_command_absolute_path(char *path, int size, char *command);
 
 void parse_all(char *command);
-void parse_arguments(char *command);
+void parse_arguments(char *command, char **argv, int *argc);
 void parse_command();
+int parse_pipe(char *command, char *command_1, char *command_2);
+
+void trim(char * s);
 
 /*
 * Declaración de variables globales
@@ -42,6 +45,11 @@ void parse_command();
 //Cantidad de argumentos y arrgelo de argumentos
 int my_argc;
 char *my_argv[BUFFERSIZE];
+
+//Cantidad de argumentos y arrgelo de argumentos para pipe
+int my_argc_2;
+char *my_argv_2[BUFFERSIZE];
+
 
 //Array donde voy a guardar las rutas de la variable PATH
 char path_array[PATHLENGTH][BUFFERSIZE];
@@ -59,6 +67,9 @@ char *home_var;
 #define RESET   "\033[0m"					/* Reset */
 #define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
 
+#define READ_END 0
+#define WRITE_END 1
+
 
 /*
 * Inicio del programa
@@ -69,6 +80,10 @@ int main(int argc, char **argv) {
 	int i;
 	for (i = 0; i < 256; ++i) {
   		my_argv[i] = malloc(256*sizeof(char));
+	}
+
+	for (i = 0; i < 256; ++i) {
+  		my_argv_2[i] = malloc(256*sizeof(char));
 	}
 
 	//Obtengo el path y guardo sus entradas
@@ -106,6 +121,7 @@ int main(int argc, char **argv) {
 		}
 
    		//Parseo comandos
+   		trim(command);
    		parse_all(command);
 	}
 
@@ -163,12 +179,142 @@ void get_path_entries() {
 * los argumentos y despues parseo el comando
 */
 void parse_all(char *command) {
-	//Guardo los argumentos en argv y argc
-	parse_arguments(command);
+	//Veo si hay que hacer Pipe
+	char command_1[BUFFERSIZE];
+	char command_2[BUFFERSIZE];
 
-	//Veo que tengo que hacer leyendo my_argc y my_argv
-	parse_command();
+	int pipe_aux = parse_pipe(command, command_1, command_2);
+
+	if(pipe_aux) { 
+		//Variables auxiliares
+		char *path_1 = malloc(PATH_MAX*sizeof(char));
+		char *path_2 = malloc(PATH_MAX*sizeof(char));
+
+		//Agrego NULL al final de cada array
+		my_argv[my_argc] = NULL;
+		my_argv_2[my_argc_2] = NULL;
+
+		//Quito espacios antes y despues
+		trim(command_1);
+	    trim(command_2);
+
+	    //Pareso argumentos de cada uno
+	    parse_arguments(command_1, my_argv, &my_argc);
+	    parse_arguments(command_2, my_argv_2, &my_argc_2);
+
+    	//Actualizo found si lo encontre o no en el PATH
+	    int found_1 = 0;
+	    found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
+
+	    //Si no lo encontre en algun directorio de la variable PATH
+		if(!found_1) {
+			//Lo busco como ruta absoluta o realtiva
+			found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
+		} 
+
+		//Actualizo found si lo encontre o no en el PATH
+	    int found_2 = 0;
+	    found_2 = find_command_in_path(path_2, PATH_MAX, my_argv_2[0]);
+
+	    //Si no lo encontre en algun directorio de la variable PATH
+		if(!found_2) {
+			//Lo busco como ruta absoluta o realtiva
+			found_2 = find_command_absolute_path(path_2, PATH_MAX, my_argv_2[0]);
+		} 
+
+		//Si encontre los dos paths
+		if(found_1 && found_2) {
+			strcpy(my_argv[0], path_1);
+			strcpy(my_argv_2[0], path_2);
+
+			//Ejecutar el pipe
+			int fd[2];
+			pid_t pid_1;
+			pid_t pid_2;
+			int status_1;
+			int status_2;
+
+			if(pipe(fd) == -1) {
+				printf("Error creating pipe\n");
+				exit(1);
+			} 
+
+			if((pid_1 = fork()) == -1) {
+				printf("Error creating child process\n");
+				exit(1);
+			} else if (pid_1 == 0) {
+				//Si estoy en el hijo, creo otro hijo
+					//Ciero el READ_END del pipe
+					close(fd[0]);
+					//Hago que 1 sea el WRITE_END del pipe              
+		          	dup2(fd[1],1);  
+		          	//Ciero los fd que sobran
+		          	close(fd[1]);
+
+		          	//Ejecuto
+		          	execv(my_argv[0], my_argv);
+		          	exit(1);
+		    } else {
+		    	if((pid_2 = fork()) == -1) {
+					printf("Error creating child process\n");
+					exit(1);
+				} else if (pid_2 == 0) {
+					//Otro hijo del Padre
+						//Ciero el WRITE_END del pipe
+						close(fd[1]);   
+						//Hago que 0 sea el REAND_END del pipe  
+				      	dup2(fd[0],0);  
+				      	//Cierro los fd que sobran
+				      	close(fd[0]);   
+
+				      	//Ejecuto
+						execv(my_argv_2[0], my_argv_2);
+						exit(1);
+		    	} else {
+		            if(waitpid(pid_1, &status_1, 0) == -1 ) {
+  						perror("waitpid");
+					}
+		    	}
+		    }
+			
+		}
+	} else {
+		//Guardo los argumentos en argv y argc
+		parse_arguments(command, my_argv, &my_argc);
+
+		//Veo que tengo que hacer leyendo my_argc y my_argv
+		parse_command();
+	}
 }
+
+
+int parse_pipe(char *command, char *command_1, char *command_2) {
+	char aux[BUFFERSIZE];
+	strcpy(aux, command);
+
+	int pipe = 0;
+
+	char *token_1;
+	char *token_2;
+	char *divider = "|";
+
+	token_1 = strtok(aux, divider);	
+	token_2 = strtok(NULL, divider);
+	
+	if(token_2 == NULL) {
+		pipe = 0;
+	} else {
+		pipe = 1;
+		strncpy(command_1, token_1, BUFFERSIZE);
+		strncpy(command_2, token_2, BUFFERSIZE);
+
+		parse_arguments(command_1, my_argv, &my_argc);
+		parse_arguments(command_2, my_argv_2, &my_argc_2);
+	}
+
+	return pipe;
+}
+
 
 /*
 * parse_arguments
@@ -178,7 +324,7 @@ void parse_all(char *command) {
 * argumentos y guardo tanto los valores
 * como la cantidad en 'my_argc' y 'my_argv'
 */
-void parse_arguments(char *command) {
+void parse_arguments(char *command, char **argv, int *argc) {
 	//Copio el comando en aux
 	char aux[BUFFERSIZE];
 	strcpy(aux, command);
@@ -194,7 +340,7 @@ void parse_arguments(char *command) {
 
     while(token != NULL) {
     	//Guardo el argumento en argv
-    	strcpy(my_argv[count], token);
+    	strcpy(argv[count], token);
 
 		//Busco nuevo argumento
     	token = strtok(NULL, divider);
@@ -203,14 +349,14 @@ void parse_arguments(char *command) {
     	count++;
     }
 
-    my_argc = count;
-
+    *argc = count;
+ 
     int i;
 
-    for(i = 0; i < my_argc; i++) {
+    for(i = 0; i < *argc; i++) {
     	//Si tiene '\n' al final, la borro
-		if (my_argv[i][strlen (my_argv[i]) - 1] == '\n') {
-	    	my_argv[i][strlen (my_argv[i]) - 1] = '\0';
+		if (argv[i][strlen (argv[i]) - 1] == '\n') {
+	    	argv[i][strlen (argv[i]) - 1] = '\0';
 	    }
     }
 }
@@ -314,13 +460,13 @@ void find_command() {
     //Si no pude dividr en barras, busco en el path
     if(token == NULL) {
     	//Actualizo found si lo encontre o no
-    	found = find_command_in_path(path, PATH_MAX);
+    	found = find_command_in_path(path, PATH_MAX, my_argv[0]);
     }
 
     //Si no lo encontre en algun directorio de la variable PATH
 	if(!found) {
 		//Lo busco como ruta absoluta o realtiva
-		found = find_command_absolute_path(path, PATH_MAX);
+		found = find_command_absolute_path(path, PATH_MAX, my_argv[0]);
 	} 
 
 	//Si lo encontre
@@ -363,7 +509,7 @@ void find_command() {
 * en algun directorio de la variable 'PATH',
 * si lo encuentro, guardo el path donde lo encontre.
 */
-int find_command_in_path(char *path, int size) {
+int find_command_in_path(char *path, int size, char *command) {
 	//Nos indica si se encontró el programa o no
 	int found = 0;
 
@@ -377,7 +523,7 @@ int find_command_in_path(char *path, int size) {
 		//Armo el path completo
 		strcat(path_aux, path_array[i]);
 		strcat(path_aux, "/");
-		strcat(path_aux, my_argv[0]);
+		strcat(path_aux, command);
 
 		//Si tiene '\n' al final, la borro
 		if (path_aux[strlen (path_aux) - 1] == '\n') {
@@ -408,7 +554,7 @@ int find_command_in_path(char *path, int size) {
 * obteniendo primero su ruta absoluta, si lo
 * encuentro, guardo el path donde lo encontre.
 */
-int find_command_absolute_path(char *path, int size) {
+int find_command_absolute_path(char *path, int size, char *command) {
     //Variables auxiliares
     char real_path[PATH_MAX + 1]; 
     char *control;
@@ -416,7 +562,7 @@ int find_command_absolute_path(char *path, int size) {
     int found = 0;
 
     //Busco el path real
-    control = realpath(my_argv[0], real_path);
+    control = realpath(command, real_path);
 
     if(real_path != NULL) {
 
@@ -487,4 +633,15 @@ void builtin_cd(char *path) {
 void builtin_pwd() {
 	getcwd(cwd, sizeof(cwd));
     printf("%s\n", cwd);
+}
+
+
+void trim(char * s) {
+    char * p = s;
+    int l = strlen(p);
+
+    while(isspace(p[l - 1])) p[--l] = 0;
+    while(* p && isspace(* p)) ++p, --l;
+
+    memmove(s, p, l + 1);
 }
