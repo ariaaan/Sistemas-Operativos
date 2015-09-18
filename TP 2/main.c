@@ -32,8 +32,9 @@ int find_command_in_path(char *path, int size);
 int find_command_absolute_path(char *path, int size);
 
 void parse_all(char *command);
-void parse_arguments(char *command);
+void parse_arguments(char *command, char **argv, int *argc);
 void parse_command();
+int parse_pipe(char *command, char *command_1, char *command_2);
 
 /*
 * Declaración de variables globales
@@ -42,6 +43,11 @@ void parse_command();
 //Cantidad de argumentos y arrgelo de argumentos
 int my_argc;
 char *my_argv[BUFFERSIZE];
+
+//Cantidad de argumentos y arrgelo de argumentos para pipe
+int my_argc_2;
+char *my_argv_2[BUFFERSIZE];
+
 
 //Array donde voy a guardar las rutas de la variable PATH
 char path_array[PATHLENGTH][BUFFERSIZE];
@@ -59,6 +65,9 @@ char *home_var;
 #define RESET   "\033[0m"					/* Reset */
 #define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
 
+#define READ_END 0
+#define WRITE_END 1
+
 
 /*
 * Inicio del programa
@@ -69,6 +78,10 @@ int main(int argc, char **argv) {
 	int i;
 	for (i = 0; i < 256; ++i) {
   		my_argv[i] = malloc(256*sizeof(char));
+	}
+
+	for (i = 0; i < 256; ++i) {
+  		my_argv_2[i] = malloc(256*sizeof(char));
 	}
 
 	//Obtengo el path y guardo sus entradas
@@ -163,12 +176,97 @@ void get_path_entries() {
 * los argumentos y despues parseo el comando
 */
 void parse_all(char *command) {
-	//Guardo los argumentos en argv y argc
-	parse_arguments(command);
+	//Veo si hay que hacer Pipe
+	char command_1[BUFFERSIZE];
+	char command_2[BUFFERSIZE];
 
-	//Veo que tengo que hacer leyendo my_argc y my_argv
-	parse_command();
+	int pipe_aux = parse_pipe(command, command_1, command_2);
+
+	if(pipe_aux) { 
+		//Agrego NULL al final de cada array
+		my_argv[my_argc] = NULL;
+		my_argv_2[my_argc_2] = NULL;
+
+		//Ejecutar el pipe
+		int fd[2];
+		pid_t pid;
+
+		if(pipe(fd) == -1) {
+			printf("Error creating pipe\n");
+			exit(1);
+		}
+
+		if((pid = fork()) == -1) {
+			printf("Error creating child process\n");
+			exit(1);
+		} else if (pid == 0) {
+			//Ciero el READ_END del pipe
+			close(fd[0]);
+			//Hago que 1 sea el WRITE_END del pipe              
+          	dup2(fd[1],1);  
+          	//Ciero los fd que sobran
+          	close(fd[1]);
+
+          	//Ejecuto
+          	execv(my_argv[0], my_argv);
+//          	execlp("ls","ls", "-l", NULL);
+          	perror("error_child");       /* still around?  exec failed           */
+          	_exit(1);
+		} else {
+			//Ciero el WRITE_END del pipe
+			close(fd[1]);   
+			//Hago que 0 sea el REAND_END del pipe  
+          	dup2(fd[0],0);  
+          	//Cierro los fd que sobran
+          	close(fd[0]);   
+
+          	//Ejecuto
+			execv(my_argv_2[0], my_argv_2);
+          	perror("error_parent");       /* still around?  exec failed           */
+
+		}
+
+
+
+
+	} else {
+		//Guardo los argumentos en argv y argc
+		parse_arguments(command, my_argv, &my_argc);
+
+		//Veo que tengo que hacer leyendo my_argc y my_argv
+		parse_command();
+	}
 }
+
+
+int parse_pipe(char *command, char *command_1, char *command_2) {
+	char aux[BUFFERSIZE];
+	strcpy(aux, command);
+
+	int pipe = 0;
+
+	char *token_1;
+	char *token_2;
+	char *divider = "|";
+
+
+	token_1 = strtok(aux, divider);	
+	token_2 = strtok(NULL, divider);
+	
+	if(token_2 == NULL) {
+		pipe = 0;
+	} else {
+		pipe = 1;
+		strncpy(command_1, token_1, BUFFERSIZE);
+		strncpy(command_2, token_2, BUFFERSIZE);
+
+		parse_arguments(command_1, my_argv, &my_argc);
+		parse_arguments(command_2, my_argv_2, &my_argc_2);
+	}
+
+	return pipe;
+}
+
 
 /*
 * parse_arguments
@@ -178,7 +276,7 @@ void parse_all(char *command) {
 * argumentos y guardo tanto los valores
 * como la cantidad en 'my_argc' y 'my_argv'
 */
-void parse_arguments(char *command) {
+void parse_arguments(char *command, char **argv, int *argc) {
 	//Copio el comando en aux
 	char aux[BUFFERSIZE];
 	strcpy(aux, command);
@@ -194,7 +292,7 @@ void parse_arguments(char *command) {
 
     while(token != NULL) {
     	//Guardo el argumento en argv
-    	strcpy(my_argv[count], token);
+    	strcpy(argv[count], token);
 
 		//Busco nuevo argumento
     	token = strtok(NULL, divider);
@@ -203,14 +301,14 @@ void parse_arguments(char *command) {
     	count++;
     }
 
-    my_argc = count;
-
+    *argc = count;
+ 
     int i;
 
-    for(i = 0; i < my_argc; i++) {
+    for(i = 0; i < *argc; i++) {
     	//Si tiene '\n' al final, la borro
-		if (my_argv[i][strlen (my_argv[i]) - 1] == '\n') {
-	    	my_argv[i][strlen (my_argv[i]) - 1] = '\0';
+		if (argv[i][strlen (argv[i]) - 1] == '\n') {
+	    	argv[i][strlen (argv[i]) - 1] = '\0';
 	    }
     }
 }
