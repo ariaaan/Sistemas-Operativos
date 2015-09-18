@@ -231,8 +231,10 @@ void parse_all(char *command) {
 			int fd[2];
 			pid_t pid_1;
 			pid_t pid_2;
+			pid_t wpid;
 			int status_1;
 			int status_2;
+			int status;
 
 			if(pipe(fd) == -1) {
 				printf("Error creating pipe\n");
@@ -253,7 +255,7 @@ void parse_all(char *command) {
 
 		          	//Ejecuto
 		          	execv(my_argv[0], my_argv);
-		          	exit(1);
+		          	_exit(1);
 		    } else {
 		    	if((pid_2 = fork()) == -1) {
 					printf("Error creating child process\n");
@@ -269,13 +271,16 @@ void parse_all(char *command) {
 
 				      	//Ejecuto
 						execv(my_argv_2[0], my_argv_2);
-						exit(1);
+						_exit(1);
 		    	} else {
-		            if(waitpid(pid_1, &status_1, 0) == -1 ) {
-  						perror("waitpid");
-					}
+		    		
 		    	}
 		    }
+
+		    //Espero por los hijos
+        	while (wait() < 0) {
+
+			}
 			
 		}
 	} else {
