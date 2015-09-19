@@ -35,6 +35,7 @@ void parse_all(char *command);
 void parse_arguments(char *command, char **argv, int *argc);
 void parse_command();
 int parse_pipe(char *command, char *command_1, char *command_2);
+void execute_pipe(char *command_1, char *command_2, int pipe_type);
 
 void trim(char * s);
 
@@ -63,12 +64,17 @@ char cwd[1024];
 //Almacena $HOME para mostrar en prompt 
 char *home_var;
 
+//Almacena el nombre de usuario y host para mostrar en prompt 
+char user_name[BUFFERSIZE];
+char host_name[BUFFERSIZE];
+
 
 #define RESET   "\033[0m"					/* Reset */
 #define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
 
-#define READ_END 0
-#define WRITE_END 1
+#define PIPE_TYPE_1 1
+#define PIPE_TYPE_2 2
+#define PIPE_TYPE_3 3
 
 
 /*
@@ -85,6 +91,10 @@ int main(int argc, char **argv) {
 	for (i = 0; i < 256; ++i) {
   		my_argv_2[i] = malloc(256*sizeof(char));
 	}
+
+	//Obtengo el nombre de usuario y host
+	getlogin_r(user_name, BUFFERSIZE);
+	gethostname(host_name, BUFFERSIZE);
 
 	//Obtengo el path y guardo sus entradas
 	get_path_entries();
@@ -107,9 +117,9 @@ int main(int argc, char **argv) {
 		//Veo si puedo cambiar '$HOME' por '~' 
 		if(strncmp(cwd, home_var, strlen(home_var)) == 0) {
 			current_dir = current_dir + strlen(home_var);
-			printf(BOLDGREEN "user@baash:~%s$ " RESET, current_dir);
+			printf(BOLDGREEN "%s@%s:~%s$ " RESET, user_name, host_name, current_dir);
 		} else {
-			printf(BOLDGREEN "user@baash:%s$ " RESET, current_dir);
+			printf(BOLDGREEN "%s@%s:%s$ " RESET, user_name, host_name, current_dir);
 		}
 
    		fgets(command, BUFFERSIZE, stdin);  
@@ -183,106 +193,10 @@ void parse_all(char *command) {
 	char command_1[BUFFERSIZE];
 	char command_2[BUFFERSIZE];
 
-	int pipe_aux = parse_pipe(command, command_1, command_2);
+	int pipe_type = parse_pipe(command, command_1, command_2);
 
-	if(pipe_aux) { 
-		//Variables auxiliares
-		char *path_1 = malloc(PATH_MAX*sizeof(char));
-		char *path_2 = malloc(PATH_MAX*sizeof(char));
-
-		//Agrego NULL al final de cada array
-		my_argv[my_argc] = NULL;
-		my_argv_2[my_argc_2] = NULL;
-
-		//Quito espacios antes y despues
-		trim(command_1);
-	    trim(command_2);
-
-	    //Pareso argumentos de cada uno
-	    parse_arguments(command_1, my_argv, &my_argc);
-	    parse_arguments(command_2, my_argv_2, &my_argc_2);
-
-    	//Actualizo found si lo encontre o no en el PATH
-	    int found_1 = 0;
-	    found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
-
-	    //Si no lo encontre en algun directorio de la variable PATH
-		if(!found_1) {
-			//Lo busco como ruta absoluta o realtiva
-			found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
-		} 
-
-		//Actualizo found si lo encontre o no en el PATH
-	    int found_2 = 0;
-	    found_2 = find_command_in_path(path_2, PATH_MAX, my_argv_2[0]);
-
-	    //Si no lo encontre en algun directorio de la variable PATH
-		if(!found_2) {
-			//Lo busco como ruta absoluta o realtiva
-			found_2 = find_command_absolute_path(path_2, PATH_MAX, my_argv_2[0]);
-		} 
-
-		//Si encontre los dos paths
-		if(found_1 && found_2) {
-			strcpy(my_argv[0], path_1);
-			strcpy(my_argv_2[0], path_2);
-
-			//Ejecutar el pipe
-			int fd[2];
-			pid_t pid_1;
-			pid_t pid_2;
-			pid_t wpid;
-			int status_1;
-			int status_2;
-			int status;
-
-			if(pipe(fd) == -1) {
-				printf("Error creating pipe\n");
-				exit(1);
-			} 
-
-			if((pid_1 = fork()) == -1) {
-				printf("Error creating child process\n");
-				exit(1);
-			} else if (pid_1 == 0) {
-				//Si estoy en el hijo, creo otro hijo
-					//Ciero el READ_END del pipe
-					close(fd[0]);
-					//Hago que 1 sea el WRITE_END del pipe              
-		          	dup2(fd[1],1);  
-		          	//Ciero los fd que sobran
-		          	close(fd[1]);
-
-		          	//Ejecuto
-		          	execv(my_argv[0], my_argv);
-		          	_exit(1);
-		    } else {
-		    	if((pid_2 = fork()) == -1) {
-					printf("Error creating child process\n");
-					exit(1);
-				} else if (pid_2 == 0) {
-					//Otro hijo del Padre
-						//Ciero el WRITE_END del pipe
-						close(fd[1]);   
-						//Hago que 0 sea el REAND_END del pipe  
-				      	dup2(fd[0],0);  
-				      	//Cierro los fd que sobran
-				      	close(fd[0]);   
-
-				      	//Ejecuto
-						execv(my_argv_2[0], my_argv_2);
-						_exit(1);
-		    	} else {
-		    		
-		    	}
-		    }
-
-		    //Espero por los hijos
-        	while (wait() < 0) {
-
-			}
-			
-		}
+	if(pipe_type) { 
+		execute_pipe(command_1, command_2, pipe_type);
 	} else {
 		//Guardo los argumentos en argv y argc
 		parse_arguments(command, my_argv, &my_argc);
@@ -292,29 +206,164 @@ void parse_all(char *command) {
 	}
 }
 
+void execute_pipe(char *command_1, char *command_2, int pipe_type) {
+	//Variables auxiliares
+	char *path_1 = malloc(PATH_MAX*sizeof(char));
+	char *path_2 = malloc(PATH_MAX*sizeof(char));
+
+	//Agrego NULL al final de cada array
+	my_argv[my_argc] = NULL;
+	my_argv_2[my_argc_2] = NULL;
+
+	//Quito espacios antes y despues
+	trim(command_1);
+    trim(command_2);
+
+    //Pareso argumentos de cada uno
+    parse_arguments(command_1, my_argv, &my_argc);
+    parse_arguments(command_2, my_argv_2, &my_argc_2);
+
+	//Actualizo found si lo encontre o no en el PATH
+    int found_1 = 0;
+    found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
+
+    //Si no lo encontre en algun directorio de la variable PATH
+	if(!found_1) {
+		//Lo busco como ruta absoluta o realtiva
+		found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
+	} 
+
+	//Actualizo found si lo encontre o no en el PATH
+    int found_2 = 0;
+    found_2 = find_command_in_path(path_2, PATH_MAX, my_argv_2[0]);
+
+    //Si no lo encontre en algun directorio de la variable PATH
+	if(!found_2) {
+		//Lo busco como ruta absoluta o realtiva
+		found_2 = find_command_absolute_path(path_2, PATH_MAX, my_argv_2[0]);
+	} 
+
+	//Si encontre los dos paths
+	if(found_1 && found_2) {
+		strcpy(my_argv[0], path_1);
+		strcpy(my_argv_2[0], path_2);
+
+		//Ejecutar el pipe
+		int fd[2];
+		pid_t pid;
+		int status;
+
+		if(pipe(fd) == -1) {
+			printf("Error creating pipe\n");
+			exit(1);
+		} 
+
+		pid = fork();
+		if(pid == -1) {
+			printf("Error creating child process\n");
+			exit(1);
+		} else if (pid == 0) {
+			//Si estoy en el hijo, creo otro hijo
+				//Ciero el READ_END del pipe
+				close(fd[0]);
+				//Hago que 1 sea el WRITE_END del pipe              
+	          	dup2(fd[1],1);  
+	          	//Ciero los fd que sobran
+	          	close(fd[1]);
+
+	          	//Ejecuto
+	          	execv(my_argv[0], my_argv);
+	          	perror("Error Child 1.\n");
+	          	_exit(1);
+	    } else {
+	    	pid = fork();
+
+	    	if(pid == -1) {
+				printf("Error creating child process\n");
+				exit(1);
+			} else if (pid == 0) {
+				//Otro hijo del Padre
+					//Ciero el WRITE_END del pipe
+					close(fd[1]);   
+					//Hago que 0 sea el REAND_END del pipe  
+			      	dup2(fd[0],0);  
+			      	//Cierro los fd que sobran
+			      	close(fd[0]);   
+
+			      	//Ejecuto
+					execv(my_argv_2[0], my_argv_2);
+					exit(1);
+					perror("Error Child 2.\n");
+	    	} 
+	    }
+
+	    //Espero por los hijos
+    	while (wait() < 0) {
+
+		}
+		
+		
+	}
+
+}
 
 int parse_pipe(char *command, char *command_1, char *command_2) {
 	char aux[BUFFERSIZE];
-	strcpy(aux, command);
 
 	int pipe = 0;
 
 	char *token_1;
 	char *token_2;
+	
+	//Veo si hay pipe tipo "|"
+	strcpy(aux, command);
 	char *divider = "|";
 
 	token_1 = strtok(aux, divider);	
 	token_2 = strtok(NULL, divider);
 	
-	if(token_2 == NULL) {
-		pipe = 0;
-	} else {
-		pipe = 1;
+	if(token_2 != NULL) {
+		pipe = PIPE_TYPE_1;
 		strncpy(command_1, token_1, BUFFERSIZE);
 		strncpy(command_2, token_2, BUFFERSIZE);
 
 		parse_arguments(command_1, my_argv, &my_argc);
 		parse_arguments(command_2, my_argv_2, &my_argc_2);
+		return pipe;
+	}
+
+	//Veo si hay pipe tipo ">"
+	strcpy(aux, command);
+	divider = ">";
+
+	token_1 = strtok(aux, divider);	
+	token_2 = strtok(NULL, divider);
+	
+	if(token_2 != NULL) {
+		pipe = PIPE_TYPE_2;
+		strncpy(command_1, token_1, BUFFERSIZE);
+		strncpy(command_2, token_2, BUFFERSIZE);
+
+		parse_arguments(command_1, my_argv, &my_argc);
+		parse_arguments(command_2, my_argv_2, &my_argc_2);
+		return pipe;
+	}
+
+	//Veo si hay pipe tipo "<"
+	strcpy(aux, command);
+	divider = "<";
+
+	token_1 = strtok(aux, divider);	
+	token_2 = strtok(NULL, divider);
+	
+	if(token_2 != NULL) {
+		pipe = PIPE_TYPE_3;
+		strncpy(command_1, token_1, BUFFERSIZE);
+		strncpy(command_2, token_2, BUFFERSIZE);
+
+		parse_arguments(command_1, my_argv, &my_argc);
+		parse_arguments(command_2, my_argv_2, &my_argc_2);
+		return pipe;
 	}
 
 	return pipe;
