@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h> 
+#include <fcntl.h>
 
 #define BUFFERSIZE 256
 #define PATHLENGTH 32
@@ -223,87 +224,176 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
     parse_arguments(command_1, my_argv, &my_argc);
     parse_arguments(command_2, my_argv_2, &my_argc_2);
 
-	//Actualizo found si lo encontre o no en el PATH
     int found_1 = 0;
-    found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
-
-    //Si no lo encontre en algun directorio de la variable PATH
-	if(!found_1) {
-		//Lo busco como ruta absoluta o realtiva
-		found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
-	} 
-
-	//Actualizo found si lo encontre o no en el PATH
     int found_2 = 0;
-    found_2 = find_command_in_path(path_2, PATH_MAX, my_argv_2[0]);
 
-    //Si no lo encontre en algun directorio de la variable PATH
-	if(!found_2) {
-		//Lo busco como ruta absoluta o realtiva
-		found_2 = find_command_absolute_path(path_2, PATH_MAX, my_argv_2[0]);
-	} 
+    int status;
 
-	//Si encontre los dos paths
-	if(found_1 && found_2) {
-		strcpy(my_argv[0], path_1);
-		strcpy(my_argv_2[0], path_2);
+    switch(pipe_type) {
+    	case PIPE_TYPE_1:
+    		//Si el pipe es tipo "|", los dos comandos deben existir
+    		//Actualizo found si lo encontre o no en el PATH
+		    found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
 
-		//Ejecutar el pipe
-		int fd[2];
-		pid_t pid;
-		int status;
+		    //Si no lo encontre en algun directorio de la variable PATH
+			if(!found_1) {
+				//Lo busco como ruta absoluta o realtiva
+				found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
+			} 
 
-		if(pipe(fd) == -1) {
-			printf("Error creating pipe\n");
-			exit(1);
-		} 
+			//Actualizo found si lo encontre o no en el PATH
+		    found_2 = find_command_in_path(path_2, PATH_MAX, my_argv_2[0]);
 
-		pid = fork();
-		if(pid == -1) {
-			printf("Error creating child process\n");
-			exit(1);
-		} else if (pid == 0) {
-			//Si estoy en el hijo, creo otro hijo
-				//Ciero el READ_END del pipe
-				close(fd[0]);
-				//Hago que 1 sea el WRITE_END del pipe              
-	          	dup2(fd[1],1);  
-	          	//Ciero los fd que sobran
-	          	close(fd[1]);
+		    //Si no lo encontre en algun directorio de la variable PATH
+			if(!found_2) {
+				//Lo busco como ruta absoluta o realtiva
+				found_2 = find_command_absolute_path(path_2, PATH_MAX, my_argv_2[0]);
+			} 
 
-	          	//Ejecuto
-	          	execv(my_argv[0], my_argv);
-	          	perror("Error Child 1.\n");
-	          	_exit(1);
-	    } else {
-	    	pid = fork();
+			//Si encontre los 2 ejecuto el pipe
+			if(found_1 && found_2) {
+				strcpy(my_argv[0], path_1);
+				strcpy(my_argv_2[0], path_2);
 
-	    	if(pid == -1) {
-				printf("Error creating child process\n");
-				exit(1);
-			} else if (pid == 0) {
-				//Otro hijo del Padre
-					//Ciero el WRITE_END del pipe
-					close(fd[1]);   
-					//Hago que 0 sea el REAND_END del pipe  
-			      	dup2(fd[0],0);  
-			      	//Cierro los fd que sobran
-			      	close(fd[0]);   
+				//Ejecutar el pipe
+				int fd[2];
+				pid_t pid;
 
-			      	//Ejecuto
-					execv(my_argv_2[0], my_argv_2);
+				if(pipe(fd) == -1) {
+					printf("Error creating pipe\n");
 					exit(1);
-					perror("Error Child 2.\n");
-	    	} 
-	    }
+				} 
 
-	    //Espero por los hijos
-    	while (wait() < 0) {
+				pid = fork();
+				if(pid == -1) {
+					printf("Error creating child process\n");
+					exit(1);
+				} else if (pid == 0) {
+					//Si estoy en el hijo, creo otro hijo
+						//Ciero el READ_END del pipe
+						close(fd[0]);
+						//Hago que 1 sea el WRITE_END del pipe              
+			          	dup2(fd[1],1);  
+			          	//Ciero los fd que sobran
+			          	close(fd[1]);
 
-		}
-		
-		
-	}
+			          	//Ejecuto
+			          	execv(my_argv[0], my_argv);
+			          	perror("Error Child 1.\n");
+			          	_exit(1);
+			    } else {
+			    	pid = fork();
+
+			    	if(pid == -1) {
+						printf("Error creating child process\n");
+						exit(1);
+					} else if (pid == 0) {
+						//Otro hijo del Padre
+							//Ciero el WRITE_END del pipe
+							close(fd[1]);   
+							//Hago que 0 sea el REAND_END del pipe  
+					      	dup2(fd[0],0);  
+					      	//Cierro los fd que sobran
+					      	close(fd[0]);   
+
+					      	//Ejecuto
+							execv(my_argv_2[0], my_argv_2);
+							exit(1);
+							perror("Error Child 2.\n");
+			    	} 
+			    }
+
+			    //Espero por los hijos
+		    	while (wait() < 0) {
+
+				}
+			}
+
+    		break;
+
+    		case PIPE_TYPE_2:
+    			//Si el pipe es tipo ">" debe existir el primer comando, el otro es un archivo
+	    		//Actualizo found si lo encontre o no en el PATH
+			    found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
+
+			    //Si no lo encontre en algun directorio de la variable PATH
+				if(!found_1) {
+					//Lo busco como ruta absoluta o realtiva
+					found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
+				} 
+
+				if(found_1) {
+					strcpy(my_argv[0], path_1);
+
+					pid_t pid;
+					pid = fork();
+
+					if (pid == -1)   {
+					 	perror("Error forking"); 
+					 	exit(1);
+					} else if (pid == 0) {        
+					 	//Abro archivo
+					 	int fd = open(my_argv_2[0], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+
+					 	//Hago que STDOUT vaya al archivo
+					 	dup2(fd, 1);   
+				    	close(fd);     
+
+				      	//Ejecuto
+			          	execv(my_argv[0], my_argv);
+			          	perror("Error Child 1.\n");
+			          	_exit(1);
+					 }
+				}
+
+				status;
+				wait (&status);
+
+				break;
+
+			case PIPE_TYPE_3:
+				//Si el pipe es tipo ">" debe existir el primer comando, el otro es un archivo
+	    		//Actualizo found si lo encontre o no en el PATH
+			    found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
+
+			    //Si no lo encontre en algun directorio de la variable PATH
+				if(!found_1) {
+					//Lo busco como ruta absoluta o realtiva
+					found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
+				} 
+
+				if(found_1) {
+					strcpy(my_argv[0], path_1);
+
+					pid_t pid;
+					pid = fork();
+
+					if (pid == -1)   {
+					 	perror("Error forking"); 
+					 	exit(1);
+					} else if (pid == 0) {        
+					 	//Abro archivo
+					 	int fd = open(my_argv_2[0], O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+
+					 	//Hago que STDOUT vaya al archivo
+					 	dup2(fd, 0);   
+				    	close(fd);     
+
+				      	//Ejecuto
+			          	execv(my_argv[0], my_argv);
+			          	perror("Error Child 1.\n");
+			          	_exit(1);
+					 }
+				}
+
+				status;
+				wait (&status);
+
+				break;
+
+    		default:
+    			break;
+    }
 
 }
 
