@@ -385,55 +385,55 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 
 			break;
 
-			case PIPE_TYPE_3:
-				/* Si el pipe es tipo ">" debe existir el primer comando, el otro es un archivo */
-	    			/* Veo si esta o no en el PATH */
-			   	found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
+		case PIPE_TYPE_3:
+			/* Si el pipe es tipo ">" debe existir el primer comando, el otro es un archivo */
+    			/* Veo si esta o no en el PATH */
+		   	found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
 
-				/* Si no lo encontre en algun directorio de la variable PATH */
-				if(!found_1) {
-					/* Lo busco como ruta absoluta o realtiva */
-					found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
-				} 
+			/* Si no lo encontre en algun directorio de la variable PATH */
+			if(!found_1) {
+				/* Lo busco como ruta absoluta o realtiva */
+				found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
+			} 
 
-				/* Si lo encontre, ejecuto el pipe */
-				if(found_1) {
-					strcpy(my_argv[0], path_1);
-					
-					/* File Descriptor y PID para fork() */	
-					pid_t pid;
-					pid = fork();
+			/* Si lo encontre, ejecuto el pipe */
+			if(found_1) {
+				strcpy(my_argv[0], path_1);
+				
+				/* File Descriptor y PID para fork() */	
+				pid_t pid;
+				pid = fork();
 
-					/* Si hay error al crear el pipe, salgo */
-					if (pid == -1)   {
-					 	perror("Error forking"); 
-					 	exit(1);
-					} else if (pid == 0) {        
-						/* Esto lo ejecuta el hijo */
-						/* Redirecciono el pipe */
+				/* Si hay error al crear el pipe, salgo */
+				if (pid == -1)   {
+				 	perror("Error forking"); 
+				 	exit(1);
+				} else if (pid == 0) {        
+					/* Esto lo ejecuta el hijo */
+					/* Redirecciono el pipe */
 
-					 	/* Abro el archivo */
-					 	int fd = open(my_argv_2[0], O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+				 	/* Abro el archivo */
+				 	int fd = open(my_argv_2[0], O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
 
-					 	/* Hago que STDOUT vaya al archivo */
-					 	dup2(fd, 0);   
-				    	close(fd);     
+				 	/* Hago que STDOUT vaya al archivo */
+				 	dup2(fd, 0);   
+			    	close(fd);     
 
-				      	/* Ejecuto */
-			          	execv(my_argv[0], my_argv);
-			          	perror("Error Child 1.\n");
-			          	_exit(1);
-					 }
-				}
+			      	/* Ejecuto */
+		          	execv(my_argv[0], my_argv);
+		          	perror("Error Child 1.\n");
+		          	_exit(1);
+				 }
+			}
 
-				/* Espero por el hijo */
-				status;
-				wait (&status);
+			/* Espero por el hijo */
+			status;
+			wait (&status);
 
-				break;
+			break;
 
-    			default:
-    				break;
+		default:
+			break;
     }
 
 }
