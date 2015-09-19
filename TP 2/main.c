@@ -227,6 +227,8 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
     int found_1 = 0;
     int found_2 = 0;
 
+    int status;
+
     switch(pipe_type) {
     	case PIPE_TYPE_1:
     		//Si el pipe es tipo "|", los dos comandos deben existir
@@ -256,7 +258,6 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 				//Ejecutar el pipe
 				int fd[2];
 				pid_t pid;
-				int status;
 
 				if(pipe(fd) == -1) {
 					printf("Error creating pipe\n");
@@ -345,12 +346,49 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 					 }
 				}
 
-				int status;
+				status;
 				wait (&status);
 
 				break;
 
 			case PIPE_TYPE_3:
+				//Si el pipe es tipo ">" debe existir el primer comando, el otro es un archivo
+	    		//Actualizo found si lo encontre o no en el PATH
+			    found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
+
+			    //Si no lo encontre en algun directorio de la variable PATH
+				if(!found_1) {
+					//Lo busco como ruta absoluta o realtiva
+					found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
+				} 
+
+				if(found_1) {
+					strcpy(my_argv[0], path_1);
+
+					pid_t pid;
+					pid = fork();
+
+					if (pid == -1)   {
+					 	perror("Error forking"); 
+					 	exit(1);
+					} else if (pid == 0) {        
+					 	//Abro archivo
+					 	int fd = open(my_argv_2[0], O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+
+					 	//Hago que STDOUT vaya al archivo
+					 	dup2(fd, 0);   
+				    	close(fd);     
+
+				      	//Ejecuto
+			          	execv(my_argv[0], my_argv);
+			          	perror("Error Child 1.\n");
+			          	_exit(1);
+					 }
+				}
+
+				status;
+				wait (&status);
+
 				break;
 
     		default:
