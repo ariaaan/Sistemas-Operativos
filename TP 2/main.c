@@ -375,7 +375,7 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 					/* Redirecciono el pipe */
 
 					 /* Abro archivo */
-					 int fd = open(my_argv_2[0], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+					 int fd = open(my_argv_2[0], O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 					 
 					/* Hago que STDOUT vaya al archivo */
 					dup2(fd, 1);   
