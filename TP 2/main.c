@@ -91,16 +91,6 @@ char host_name[BUFFERSIZE];
 */
 
 int main(int argc, char **argv) {
-	/* Aloco memoria para las variables de argumentos */
-	int i;
-	for (i = 0; i < 256; ++i) {
-  		my_argv[i] = malloc(256*sizeof(char));
-	}
-
-	for (i = 0; i < 256; ++i) {
-  		my_argv_2[i] = malloc(256*sizeof(char));
-	}
-
 	/* Obtengo el nombre de usuario y host */
 	getlogin_r(user_name, BUFFERSIZE);
 	gethostname(host_name, BUFFERSIZE);
@@ -120,6 +110,16 @@ int main(int argc, char **argv) {
 
 	/* Loop principal del 'baash' */
 	while(1) {
+			/* Aloco memoria para las variables de argumentos */
+			int i;
+			for (i = 0; i < 256; ++i) {
+		  		my_argv[i] = malloc(256*sizeof(char));
+			}
+
+			for (i = 0; i < 256; ++i) {
+		  		my_argv_2[i] = malloc(256*sizeof(char));
+			}
+
 		/* Auxiliar, copio la dirección del cwd */
 		current_dir = cwd;
 
@@ -146,6 +146,15 @@ int main(int argc, char **argv) {
    		/* Remuevo los espacios y parseo comandos */
    		trim(command);
    		parse_all(command);
+
+   		/* Libero memoria de las variables de argumentos */
+		for (i = 0; i < 256; ++i) {
+			free(my_argv[i]);
+		}
+		for (i = 0; i < 256; ++i) {
+			free(my_argv_2[i]);	
+		}
+
 	}
 
 	return 0;
