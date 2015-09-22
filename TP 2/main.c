@@ -113,11 +113,11 @@ int main(int argc, char **argv) {
 			/* Aloco memoria para las variables de argumentos */
 			int i;
 			for (i = 0; i < 256; ++i) {
-		  		my_argv[i] = malloc(256*sizeof(char));
+			my_argv[i] = malloc(256*sizeof(char));
 			}
 
 			for (i = 0; i < 256; ++i) {
-		  		my_argv_2[i] = malloc(256*sizeof(char));
+				my_argv_2[i] = malloc(256*sizeof(char));
 			}
 
 		/* Auxiliar, copio la dirección del cwd */
@@ -134,20 +134,20 @@ int main(int argc, char **argv) {
 		}
 
 		/* Leo la entrada por teclado */ 
-   		fgets(command, BUFFERSIZE, stdin);  
+		fgets(command, BUFFERSIZE, stdin);  
 
-   		/* Veo si se apreto Ctrl+D */
+		/* Veo si se apreto Ctrl+D */
 		if(feof(stdin)) {
 			printf("\n");
 			/* Salgo del programa */
 			exit(1);
 		}
 
-   		/* Remuevo los espacios y parseo comandos */
-   		trim(command);
-   		parse_all(command);
+		/* Remuevo los espacios y parseo comandos */
+		trim(command);
+		parse_all(command);
 
-   		/* Libero memoria de las variables de argumentos */
+		/* Libero memoria de las variables de argumentos */
 		for (i = 0; i < 256; ++i) {
 			free(my_argv[i]);
 		}
@@ -244,23 +244,23 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 
 	/* Quito espacios antes y despues */
 	trim(command_1);
-    trim(command_2);
+	trim(command_2);
 
-    /* Pareso los argumentos de cada uno */
-    parse_arguments(command_1, my_argv, &my_argc);
-    parse_arguments(command_2, my_argv_2, &my_argc_2);
+	/* Pareso los argumentos de cada uno */
+	parse_arguments(command_1, my_argv, &my_argc);
+	parse_arguments(command_2, my_argv_2, &my_argc_2);
 
-    int found_1 = 0;
-    int found_2 = 0;
+	int found_1 = 0;
+	int found_2 = 0;
 
-    int status;
+	int status;
 
-    /* Dependiendo el tipo de pipe, realizo diferentes acciones */
-    switch(pipe_type) {
-    	case PIPE_TYPE_1:
-    		/* Si el pipe es tipo "|", los dos comandos deben existir */
-    		
-    		/* Veo si esta o no en el PATH */
+	/* Dependiendo el tipo de pipe, realizo diferentes acciones */
+	switch(pipe_type) {
+		case PIPE_TYPE_1:
+			/* Si el pipe es tipo "|", los dos comandos deben existir */
+			
+			/* Veo si esta o no en el PATH */
 		found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
 		/* Si no lo encontre en algun directorio de la variable PATH */
 		if(!found_1) {
@@ -268,7 +268,7 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 			found_1 = find_command_absolute_path(path_1, PATH_MAX, my_argv[0]);
 		} 
 
-    		/* Veo si esta o no en el PATH */
+			/* Veo si esta o no en el PATH */
 		found_2 = find_command_in_path(path_2, PATH_MAX, my_argv_2[0]);
 		/* Si no lo encontre en algun directorio de la variable PATH */
 		if(!found_2) {
@@ -305,20 +305,20 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 				/* Ciero el READ_END del pipe */
 				close(fd[0]);
 				/* Hago que 1 sea el WRITE_END del pipe */
-			       	dup2(fd[1],1);  
-		          	/* Ciero los fd que sobran */
-		          	close(fd[1]);
+				dup2(fd[1],1);  
+				/* Ciero los fd que sobran */
+				close(fd[1]);
 
-		          	/* Ejecuto */
-		          	execv(my_argv[0], my_argv);
-		          	perror("Error Child 1.\n");
-		          	_exit(1);
+				/* Ejecuto */
+				execv(my_argv[0], my_argv);
+				perror("Error Child 1.\n");
+				_exit(1);
 			} else {
-			    	/* El padre vuelve a crear otro hijo */
-			    	pid = fork();
+				/* El padre vuelve a crear otro hijo */
+				pid = fork();
 
 				/* Si hay error, salgo */
-			    	if(pid == -1) {
+					if(pid == -1) {
 					printf("Error creating child process\n");
 					exit(1);
 				} else if (pid == 0) {
@@ -328,11 +328,11 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 					/* Ciero el WRITE_END del pipe */
 					close(fd[1]);   
 					/* Hago que 0 sea el REAND_END del pipe */
-				      	dup2(fd[0],0);  
-				      	/* Cierro los fd que sobran */
-				      	close(fd[0]);   
+					dup2(fd[0],0);  
+					/* Cierro los fd que sobran */
+					close(fd[0]);   
 
-				      	/* Ejecuto */
+					/* Ejecuto */
 					execv(my_argv_2[0], my_argv_2);
 					exit(1);
 					perror("Error Child 2.\n");
@@ -340,17 +340,17 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 			}
 
 			/* Espero que los hijos terminen */
-		    	while (wait() < 0) {
+			while (wait() < 0) {
 
 			}
 		}
 
-    		break;
+			break;
 
-    		case PIPE_TYPE_2:
-    			/* Si el pipe es tipo ">" debe existir el primer comando, el otro es un archivo */
-    			/* Veo si esta o no en el PATH */
-    			found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
+			case PIPE_TYPE_2:
+				/* Si el pipe es tipo ">" debe existir el primer comando, el otro es un archivo */
+				/* Veo si esta o no en el PATH */
+				found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
 
 			/* Si no lo encontre en algun directorio de la variable PATH */
 			if(!found_1) {
@@ -368,23 +368,23 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 
 				/* Si hay error al hacer el fork(), salgo */
 				if (pid == -1)   {
-				 	perror("Error forking"); 
-				 	exit(1);
+					perror("Error forking"); 
+					exit(1);
 				} else if (pid == 0) {        
 					/* Esto lo ejecuta el hijo */
 					/* Redirecciono el pipe */
 
-					 /* Abro archivo */
-					 int fd = open(my_argv_2[0], O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-					 
+					/* Abro archivo */
+					int fd = open(my_argv_2[0], O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
 					/* Hago que STDOUT vaya al archivo */
 					dup2(fd, 1);   
-				    	close(fd);     
+					close(fd);     
 
-				      	/* Ejecuto */
-			          	execv(my_argv[0], my_argv);
-			          	perror("Error Child 1.\n");
-			          	_exit(1);
+					/* Ejecuto */
+					execv(my_argv[0], my_argv);
+					perror("Error Child 1.\n");
+					_exit(1);
 				}
 			}
 
@@ -396,8 +396,8 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 
 		case PIPE_TYPE_3:
 			/* Si el pipe es tipo ">" debe existir el primer comando, el otro es un archivo */
-    			/* Veo si esta o no en el PATH */
-		   	found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
+			/* Veo si esta o no en el PATH */
+			found_1 = find_command_in_path(path_1, PATH_MAX, my_argv[0]);
 
 			/* Si no lo encontre en algun directorio de la variable PATH */
 			if(!found_1) {
@@ -415,24 +415,24 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 
 				/* Si hay error al crear el pipe, salgo */
 				if (pid == -1)   {
-				 	perror("Error forking"); 
-				 	exit(1);
-				} else if (pid == 0) {        
+					perror("Error forking"); 
+					exit(1);
+				} else if (pid == 0) {
 					/* Esto lo ejecuta el hijo */
 					/* Redirecciono el pipe */
 
-				 	/* Abro el archivo */
-				 	int fd = open(my_argv_2[0], O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+					/* Abro el archivo */
+					int fd = open(my_argv_2[0], O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
 
-				 	/* Hago que STDOUT vaya al archivo */
-				 	dup2(fd, 0);   
-			    	close(fd);     
+					/* Hago que STDOUT vaya al archivo */
+					dup2(fd, 0);
+					close(fd);
 
-			      	/* Ejecuto */
-		          	execv(my_argv[0], my_argv);
-		          	perror("Error Child 1.\n");
-		          	_exit(1);
-				 }
+					/* Ejecuto */
+					execv(my_argv[0], my_argv);
+					perror("Error Child 1.\n");
+					_exit(1);
+				}
 			}
 
 			/* Espero por el hijo */
@@ -443,8 +443,7 @@ void execute_pipe(char *command_1, char *command_2, int pipe_type) {
 
 		default:
 			break;
-    }
-
+	}
 }
 
 /*
@@ -538,44 +537,44 @@ void parse_arguments(char *command, char **argv, int *argc) {
 
 	/* Divido en " " */
 	char *divider = " ";
-  	char *token;
+	char *token;
 
-  	/* Leo la primera parte */
-    token = strtok(aux, divider);
+	/* Leo la primera parte */
+	token = strtok(aux, divider);
 
-    int count = 0;
+	int count = 0;
 
-    while(token != NULL) {
-    	/* Guardo el argumento en argv */
-    	strcpy(argv[count], token);
+	while(token != NULL) {
+		/* Guardo el argumento en argv */
+		strcpy(argv[count], token);
 
 		/* Busco nuevo argumento */
-    	token = strtok(NULL, divider);
+		token = strtok(NULL, divider);
 
-    	/* Aumento el contador */
-    	count++;
-    }
+		/* Aumento el contador */
+		count++;
+	}
 
-    /* Guardo al cantidad de argumentos en argc */
-    *argc = count;
- 
-    int i;
+	/* Guardo al cantidad de argumentos en argc */
+	*argc = count;
 
-    /* Elimino la "\n" de los argumentos */
-    for(i = 0; i < *argc; i++) {
-    	//Si tiene '\n' al final, la borro
+	int i;
+
+	/* Elimino la "\n" de los argumentos */
+	for(i = 0; i < *argc; i++) {
+		//Si tiene '\n' al final, la borro
 		if (argv[i][strlen (argv[i]) - 1] == '\n') {
-	    	argv[i][strlen (argv[i]) - 1] = '\0';
-	    }
-    }
+			argv[i][strlen (argv[i]) - 1] = '\0';
+		}
+	}
 }
 
 /*
  * Función:  parse_command 
  * -----------------------
  *  Dado el comando ingresado, que se encuentra
- *  en 'my_argv[0]', debo ver si es un comando 
- *  builtin, un programa que debo buscar en 
+ *  en 'my_argv[0]', debo ver si es un comando
+ *  builtin, un programa que debo buscar en
  *  los directorios del 'PATH' o si es una
  *  ruta, ya sea relativa o absoluta al programa.
  */
@@ -595,10 +594,10 @@ void parse_command() {
 
 	/* Si tiene '\n' al final, la borro */
 	if (command[strlen (command) - 1] == '\n') {
-    	command[strlen (command) - 1] = '\0';
-    }
+		command[strlen (command) - 1] = '\0';
+	}
 
-    /* Primero veo si se llamo a alguna funcion builtin */
+	/* Primero veo si se llamo a alguna funcion builtin */
 	if(strcmp(command, "cd") == 0) {
 		char cd_path[BUFFERSIZE] = "";
 		int i;
@@ -658,22 +657,22 @@ void find_command() {
 
 	/* Divido en "/" para ver si lo tengo que buscar en el path */
 	char *divider = "/";
-  	char *token;
+	char *token;
 
-    token = strtok(aux, divider);
-    token = strtok(NULL, divider);
+	token = strtok(aux, divider);
+	token = strtok(NULL, divider);
 
-    /* Si no pude dividr en barras, busco en el path */
-    if(token == NULL) {
-    	/* Actualizo found si lo encontre o no */
-    	found = find_command_in_path(path, PATH_MAX, my_argv[0]);
-    }
+	/* Si no pude dividr en barras, busco en el path */
+	if(token == NULL) {
+		/* Actualizo found si lo encontre o no */
+		found = find_command_in_path(path, PATH_MAX, my_argv[0]);
+	}
 
-    /* Si no lo encontre en algun directorio de la variable PATH */
+	/* Si no lo encontre en algun directorio de la variable PATH */
 	if(!found) {
 		/* Lo busco como ruta absoluta o realtiva */
 		found = find_command_absolute_path(path, PATH_MAX, my_argv[0]);
-	} 
+	}
 
 	/* Si lo encontre */
 	if(found) {
@@ -697,12 +696,12 @@ void find_command() {
 
 			exit(1);
 		}
- 		
- 		/* Si tenia un '&' al final, no espero */
+
+		/* Si tenia un '&' al final, no espero */
 		if(!ampersand) {
 			int status;
 			wait(&status);
-		}	
+		}
 
 	} else {
 		/* Si no se encontro, no hago nada */
@@ -739,8 +738,8 @@ int find_command_in_path(char *path, int size, char *command) {
 
 		/* Si tiene '\n' al final, la borro */
 		if (path_aux[strlen (path_aux) - 1] == '\n') {
-    		path_aux[strlen (path_aux) - 1] = '\0';
-    	}
+			path_aux[strlen (path_aux) - 1] = '\0';
+		}
 
 		/* Veo si el programa existe */
 		if(access(path_aux, F_OK) != -1 ) {
@@ -771,34 +770,32 @@ int find_command_in_path(char *path, int size, char *command) {
  */
 
 int find_command_absolute_path(char *path, int size, char *command) {
-    /* Variables auxiliares */
-    char real_path[PATH_MAX + 1]; 
-    char *control;
+	/* Variables auxiliares */
+	char real_path[PATH_MAX + 1]; 
+	char *control;
 
-    int found = 0;
+	int found = 0;
 
-    /* Busco el path real */
-    control = realpath(command, real_path);
+	/* Busco el path real */
+	control = realpath(command, real_path);
 
-    if(real_path != NULL) {
-
-    	/* Si tiene '\n' al final, la borro */
+	if(real_path != NULL) {
+		/* Si tiene '\n' al final, la borro */
 		if (real_path[strlen (real_path) - 1] == '\n') {
-	    	real_path[strlen (real_path) - 1] = '\0';
-	    }
+			real_path[strlen (real_path) - 1] = '\0';
+		}
 
-    	/* Veo si el programa existe */
+		/* Veo si el programa existe */
 		if(access(real_path, F_OK) != -1 ) {
 			strncpy(path, real_path, PATH_MAX);
 
 			found = 1;
 		}
+	} else {
+		printf("Error parsing path\n");
+	}
 
-    } else {
-    	printf("Error parsing path\n");
-    }
-
-    return found;
+	return found;
 }
 
 /*
@@ -818,25 +815,23 @@ void builtin_cd(char *path) {
 		/* Si se mando NULL, debo cambiar al $HOME */
 		if(chdir(home_var) != -1) {
 			/* Busco el current working directory y lo guardo */
-	   		getcwd(cwd, sizeof(cwd));
+			getcwd(cwd, sizeof(cwd));
 		} else {
 			printf("Error %d. Couldn't change directory\n", errno);
 		}	
 	} else {
 		/* Si tiene '\n' al final, la borro */
 		if (path[strlen (path) - 1] == '\n') {
-	    	path[strlen (path) - 1] = '\0';
-	    }
+			path[strlen (path) - 1] = '\0';
+		}
 
 		if(chdir(path) != -1) {
 			/* Busco el current working directory y lo guardo */
-	   		getcwd(cwd, sizeof(cwd));
+			getcwd(cwd, sizeof(cwd));
 		} else {
 			printf("Error %d. Couldn't change directory\n", errno);
 		}	
 	}
-	
-	
 }
 
 /*
@@ -847,7 +842,7 @@ void builtin_cd(char *path) {
 
 void builtin_pwd() {
 	getcwd(cwd, sizeof(cwd));
-    printf("%s\n", cwd);
+	printf("%s\n", cwd);
 }
 
 /*
@@ -858,11 +853,11 @@ void builtin_pwd() {
  */
 
 void trim(char *string) {
-    char *p = string;
-    int l = strlen(p);
+	char *p = string;
+	int l = strlen(p);
 
-    while(isspace(p[l-1])) p[--l] = 0;
-    while(*p && isspace(*p)) ++p, --l;
+	while(isspace(p[l-1])) p[--l] = 0;
+	while(*p && isspace(*p)) ++p, --l;
 
-    memmove(string, p, l+1);
+	memmove(string, p, l+1);
 }
