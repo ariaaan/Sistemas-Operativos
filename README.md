@@ -18,5 +18,5 @@ Implementar de manera sencilla un intérprete de línea de comandos (shell) al e
 ---
 
 #### Información útil para la materia
-- [*Información útil*](https://github.com/ariaaan/Sistemas-Operativos/tree/master/TP%202)   
+- [*Información útil*](https://github.com/ariaaan/Sistemas-Operativos/tree/master/Info%20Util)   
 Información sobre los comandos de `Git` y `gcc`.
