@@ -13,7 +13,7 @@ Repositorio para los trabajos prácticos de la materia Sistemas Operativos I, de
 Generar la utilidad ksamp que muestra de diversas formas la información disponible en /proc.
 
 - [Trabajo Práctico **2**: baash](https://github.com/ariaaan/Sistemas-Operativos/tree/master/TP%202)   
-Implementar de manera sencilla un intérprete de línea de comandos (shell) al estilo de Bourne shell.
+Implementar de manera sencilla un intérprete de línea de comandos al estilo de Bourne shell.
 
 ---
 
