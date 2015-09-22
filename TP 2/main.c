@@ -811,7 +811,7 @@ void builtin_cd(char *path) {
 	char aux[BUFFERSIZE];
 	strcpy(aux, path);
 
-	if(strcmp(path, "") == 0) {
+	if((strcmp(path, "") == 0) || (strcmp(path, "~") == 0)) {
 		/* Si se mando NULL, debo cambiar al $HOME */
 		if(chdir(home_var) != -1) {
 			/* Busco el current working directory y lo guardo */
