@@ -56,7 +56,7 @@ Agregue al shell de la parte anterior, la funcionalidad de correr programas como
 #### Resolución
 Para el desarrollo de esta parte lo único que se tuvo que hacer, es leer los argumentos parseados, y si el último argumento era un ampersand `&`, se omitía la parte del `wait()` a la hora de esperar a que el hijo termine.
 
->**concurrencia con `&`**  
+>**Concurrencia con `&`**  
 >![](https://github.com/ariaaan/Sistemas-Operativos/blob/master/TP%202/Screenshots/Screenshot_05.png)   
 
 ### Parte C
