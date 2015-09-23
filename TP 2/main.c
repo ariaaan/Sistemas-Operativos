@@ -704,7 +704,8 @@ void find_command() {
 		}
 
 	} else {
-		/* Si no se encontro, no hago nada */
+		/* Si no se encontro, imprimo error */
+		printf("No se encontró el comando: '%s'\n", my_argv[0]);
 	}
 }
 
