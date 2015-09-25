@@ -9,14 +9,17 @@ Repositorio para los trabajos prácticos de la materia Sistemas Operativos I, de
 ---
 
 ## Trabajos Prácticos
-- [Trabajo Práctico **1**: ksamp](https://github.com/ariaaan/Sistemas-Operativos/tree/master/TP%201)   
+- [Trabajo Práctico **1**: ksamp](https://github.com/ariaaan/Sistemas-Operativos/tree/master/TP-1)   
 Generar la utilidad ksamp que muestra de diversas formas la información disponible en /proc.
 
-- [Trabajo Práctico **2**: baash](https://github.com/ariaaan/Sistemas-Operativos/tree/master/TP%202)   
+- [Trabajo Práctico **2**: baash](https://github.com/ariaaan/Sistemas-Operativos/tree/master/TP-2)   
 Implementar de manera sencilla un intérprete de línea de comandos al estilo de Bourne shell.
+
+- [Trabajo Práctico **3**: módulo kernel](https://github.com/ariaaan/Sistemas-Operativos/tree/master/TP-3)   
+Desarrollo de dos simples módulos para insertar en el kernel de linux.
 
 ---
 
 #### Información útil para la materia
-- [*Información útil*](https://github.com/ariaaan/Sistemas-Operativos/tree/master/Info%20Util)   
+- [*Información útil*](https://github.com/ariaaan/Sistemas-Operativos/tree/master/Info-Util)   
 Información sobre los comandos de `Git` y `gcc`.
