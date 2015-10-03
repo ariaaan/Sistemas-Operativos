@@ -1,5 +1,5 @@
-
-obj-m += driver_encryptor.o
+obj-m += driver_encrypter.o
+obj-m += driver_decrypter.o
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
