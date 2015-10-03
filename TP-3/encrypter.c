@@ -17,6 +17,10 @@ MODULE_AUTHOR("Arian Giles Garcia");
 /* Major Number of the Driver */
 static int major_number = 256;
 
+/* Device Name */
+static char device_name[] = "encrypter";
+
+
 /* Amount that is added to every char of the data */
 static int encryptation_seed = 1;
 
@@ -108,7 +112,7 @@ int driver_init(void) {
 	that we are registering a char device*/
 
 	/* Parameteres: Major Number, Name of the driver, File operations */ 
-	register_chrdev(major_number, "encrypter", &fops); 
+	register_chrdev(major_number, device_name, &fops); 
 	return 0;
 }
 
@@ -117,7 +121,7 @@ void driver_exit(void) {
 	printk(KERN_ALERT "Device exit\n");
 
 	/* Unregister the char device driver */
-	unregister_chrdev(major_number, "encrypter");
+	unregister_chrdev(major_number, device_name);
 }
 
 /* Encrypt data */
