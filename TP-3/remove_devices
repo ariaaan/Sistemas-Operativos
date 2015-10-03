@@ -1,5 +1,11 @@
 #!/bin/bash
 
+echo 'Removing modules'
+sudo rmmod encrypter
+echo 'Encrypter removed'
+sudo rmmod decrypter
+echo 'Decrypter removed'
+echo ''
 echo ''
 echo 'Deleting entry from /dev for the encrypter'
 sudo rm /dev/encrypter
@@ -9,5 +15,7 @@ echo 'Deleting entry from /dev for the decrypter'
 sudo rm /dev/decrypter 
 echo '/dev/decrypter -> Deleted'
 echo ''
+echo 'Cleaning'
+make clean
 echo 'Done'
 echo ''
