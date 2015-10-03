@@ -8,7 +8,7 @@
 /* ------------------ */
 
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Device Driver Encryptor");
+MODULE_DESCRIPTION("Device Driver Encrypter");
 MODULE_AUTHOR("Arian Giles Garcia");
 
 /* Variables */
@@ -22,14 +22,13 @@ static char device_name[] = "encrypter";
 
 
 /* Amount that is added to every char of the data */
-static int encryptation_seed = 1;
+static int encryption_seed = 1;
 
 /* Data to be encripted */
 static char data[100] = {0};
 
 /* Encripted data */
 static char encrypted_data[100] = {0};
-
 
 /* Functions Declarations */
 /* ---------------------- */
@@ -55,7 +54,7 @@ struct file_operations fops = {
 
 /* Device Open */
 int dev_open(struct inode *pinode, struct file *pfile) {
-	printk(KERN_ALERT "Device was opened\n");
+	printk(KERN_ALERT "Device encrypter open\n");
 	return 0;
 }
 
@@ -68,17 +67,10 @@ ssize_t dev_read (struct file *pfile, char __user *buffer, size_t length, loff_t
 		return 0;
 	}	
 
-	printk(KERN_ALERT "Read Data: %s\n", data);
-	printk(KERN_ALERT "Length: %zu\n", length);
-
-	printk(KERN_ALERT "Encrypted Data: %s\n", encrypted_data);
-
 	for(k = 0; k < strlen(encrypted_data); k++) {
 		put_user(encrypted_data[k], buffer++);
 		bytes_read++;
 	}
-
-	printk(KERN_ALERT "bytes_read: %d\n", bytes_read);
 
 	(*offset) += bytes_read;
 
@@ -87,26 +79,25 @@ ssize_t dev_read (struct file *pfile, char __user *buffer, size_t length, loff_t
 
 /* Device Write */
 ssize_t dev_write (struct file *pfile, const char __user *buffer, size_t length, loff_t *offset) {
-	printk(KERN_ALERT "Inside the %s function.\n", __FUNCTION__);
+	memset(data, 0, 100);
+	memset(encrypted_data, 0, 100);
+
 	strncpy(data, buffer, length - 1);
-	printk("Data was coppied\n");
 
 	encrypt_data();
-
-	printk("Data was encrypted\n");
 
 	return length;
 }
 
 /* Device Close */
 int dev_close (struct inode *pinode, struct file *pfile) {
-	printk(KERN_ALERT "Device was closed\n");
+	printk(KERN_ALERT "Device encrypter close\n");
 	return 0;
 }
 
 /* Driver Init */
 int driver_init(void) {
-	printk(KERN_ALERT "Device init\n");
+	printk(KERN_ALERT "Device encrypter init\n");
 
 	/* Register with the kernel and indicate 
 	that we are registering a char device*/
@@ -118,7 +109,7 @@ int driver_init(void) {
 
 /* Driver Exit */
 void driver_exit(void) {
-	printk(KERN_ALERT "Device exit\n");
+	printk(KERN_ALERT "Device encrypter exit\n");
 
 	/* Unregister the char device driver */
 	unregister_chrdev(major_number, device_name);
@@ -128,7 +119,7 @@ void driver_exit(void) {
 void encrypt_data(void) {
 	int k;
 	for(k = 0; k < strlen(data); k++) {
-		encrypted_data[k] = data[k] + encryptation_seed;
+		encrypted_data[k] = data[k] + encryption_seed;
 	}
 
 	strcat(encrypted_data, "\n");
