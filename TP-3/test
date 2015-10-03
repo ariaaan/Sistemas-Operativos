@@ -1,0 +1,46 @@
+#!/bin/bash
+
+echo 'Testing TP3'
+echo '-----------'
+echo ''
+
+echo 'Executing make'
+echo '--------------'
+make
+echo ''
+
+echo 'Inserting and creating devices'
+echo '------------------------------'
+./create_devices
+echo ''
+
+echo 'String to encrypt: "Hello World!"'
+echo '--------------------------------'
+echo ''
+
+echo 'Encripting -> echo Hello World! > /dev/encrypter'
+echo Hello World! > /dev/encrypter
+echo ''
+
+echo 'Encrypted string'
+echo '----------------'
+cat /dev/encrypter
+echo ''
+
+echo 'Decrypting -> cat /dev/encrypter > /dev/decrypter'
+cat /dev/encrypter > /dev/decrypter
+echo ''
+
+echo 'Decrypted string'
+echo '----------------'
+cat /dev/decrypter
+echo ''
+
+echo 'Removing devices and modules'
+echo '------------------------------'
+./remove_devices
+echo ''
+
+echo 'Cleaning'
+echo '--------'
+make clean

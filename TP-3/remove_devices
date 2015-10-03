@@ -6,7 +6,6 @@ echo 'Encrypter removed'
 sudo rmmod decrypter
 echo 'Decrypter removed'
 echo ''
-echo ''
 echo 'Deleting entry from /dev for the encrypter'
 sudo rm /dev/encrypter
 echo '/dev/encrypter -> Deleted'
