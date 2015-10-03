@@ -51,7 +51,7 @@ struct file_operations fops = {
 
 /* Device Open */
 int dev_open(struct inode *pinode, struct file *pfile) {
-	printk(KERN_ALERT "Device was opened.\n");
+	printk(KERN_ALERT "Device was opened\n");
 	return 0;
 }
 
@@ -61,6 +61,8 @@ ssize_t dev_read (struct file *pfile, char __user *buffer, size_t length, loff_t
 	int bytes_read = 0;
 
 	printk(KERN_ALERT "Read Data: %s\n", data);
+	printk(KERN_ALERT "Length: %zu\n", length);
+
 	printk(KERN_ALERT "Encrypted Data: %s\n", encrypted_data);
 
 	for(k = 0; k < strlen(encrypted_data); k++) {
@@ -88,7 +90,7 @@ ssize_t dev_write (struct file *pfile, const char __user *buffer, size_t length,
 
 /* Device Close */
 int dev_close (struct inode *pinode, struct file *pfile) {
-	printk(KERN_ALERT "Device was closes\n");
+	printk(KERN_ALERT "Device was closed\n");
 	return 0;
 }
 
