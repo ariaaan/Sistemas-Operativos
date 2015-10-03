@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo ''
+echo 'Deleting entry from /dev for the encrypter'
+sudo rm /dev/encrypter
+echo '/dev/encrypter -> Deleted'
+echo ''
+echo 'Deleting entry from /dev for the decrypter'
+sudo rm /dev/decrypter 
+echo '/dev/decrypter -> Deleted'
+echo ''
+echo 'Done'
+echo ''

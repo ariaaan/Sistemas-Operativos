@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo ''
+echo 'Creating entry in /dev for the encrypter'
+sudo mknod -m  666 /dev/encrypter c 50 0
+echo '/dev/encrypter -> Major number: 50 -> Done'
+echo ''
+echo 'Creating entry in /dev for the decrypter'
+sudo mknod -m  666 /dev/decrypter c 51 0
+echo '/dev/decrypter -> Major number: 51 -> Done'
+echo ''
+echo 'Done'
+echo ''
