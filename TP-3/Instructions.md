@@ -18,7 +18,7 @@ sudo mknod -m  666 /dev/dev_encryptor c 256 0
 
 Donde vemos que se va a llamar `dev_encryptor` y va a ser responsable del Major number 256, y el minor number 0.
 
-### Borar un device de `/dev`
+### Borrar un device de `/dev`
 Para borrar simplemente hacemos:
 
 ```
