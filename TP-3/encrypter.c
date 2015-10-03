@@ -15,11 +15,10 @@ MODULE_AUTHOR("Arian Giles Garcia");
 /* --------- */
 
 /* Major Number of the Driver */
-static int major_number = 256;
+static int major_number = 50;
 
 /* Device Name */
 static char device_name[] = "encrypter";
-
 
 /* Amount that is added to every char of the data */
 static int encryption_seed = 1;

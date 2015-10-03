@@ -15,20 +15,19 @@ MODULE_AUTHOR("Arian Giles Garcia");
 /* --------- */
 
 /* Major Number of the Driver */
-static int major_number = 128;
+static int major_number = 51;
 
 /* Device Name */
 static char device_name[] = "decrypter";
 
-
-/* Amount that is substracted from every char of the data */
+/* Amount that is added to every char of the data */
 static int encryption_seed = 1;
 
-/* Encripted data */
-static char encrypted_data[100] = {0};
-
-/* Original data */
+/* Data to be encripted */
 static char data[100] = {0};
+
+/* Encripted data */
+static char decrypted_data[100] = {0};
 
 /* Functions Declarations */
 /* ---------------------- */
@@ -54,25 +53,44 @@ struct file_operations fops = {
 
 /* Device Open */
 int dev_open(struct inode *pinode, struct file *pfile) {
-
+	printk(KERN_ALERT "Device encrypter open\n");
 	return 0;
 }
 
 /* Device Read */
 ssize_t dev_read (struct file *pfile, char __user *buffer, size_t length, loff_t *offset) {
-	
-	return 0;
+	int k;
+	int bytes_read = 0;
+
+	if((*offset) >= strlen(decrypted_data)) {
+		return 0;
+	}	
+
+	for(k = 0; k < strlen(decrypted_data); k++) {
+		put_user(decrypted_data[k], buffer++);
+		bytes_read++;
+	}
+
+	(*offset) += bytes_read;
+
+	return bytes_read;
 }
 
 /* Device Write */
 ssize_t dev_write (struct file *pfile, const char __user *buffer, size_t length, loff_t *offset) {
+	memset(data, 0, 100);
+	memset(decrypted_data, 0, 100);
 
-	return 0;
+	strncpy(data, buffer, length - 1);
+
+	decrypt_data();
+
+	return length;
 }
 
 /* Device Close */
 int dev_close (struct inode *pinode, struct file *pfile) {
-
+	printk(KERN_ALERT "Device decrypter close\n");
 	return 0;
 }
 
@@ -96,14 +114,14 @@ void driver_exit(void) {
 	unregister_chrdev(major_number, device_name);
 }
 
-/* Decrypt data */
+/* Encrypt data */
 void decrypt_data(void) {
 	int k;
-	for(k = 0; k < strlen(encrypted_data) - 1; k++) {
-		data[k] = encrypted_data[k] - encryption_seed;
+	for(k = 0; k < strlen(data); k++) {
+		decrypted_data[k] = data[k] - encryption_seed;
 	}
 
-	//strcat(data, "\n");
+	strcat(decrypted_data, "\n");
 }
 
 module_init(driver_init);
