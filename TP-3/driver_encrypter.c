@@ -60,6 +60,10 @@ ssize_t dev_read (struct file *pfile, char __user *buffer, size_t length, loff_t
 	int k;
 	int bytes_read = 0;
 
+	if((*offset) >= strlen(encrypted_data)) {
+		return 0;
+	}	
+
 	printk(KERN_ALERT "Read Data: %s\n", data);
 	printk(KERN_ALERT "Length: %zu\n", length);
 
@@ -71,6 +75,8 @@ ssize_t dev_read (struct file *pfile, char __user *buffer, size_t length, loff_t
 	}
 
 	printk(KERN_ALERT "bytes_read: %d\n", bytes_read);
+
+	(*offset) += bytes_read;
 
 	return bytes_read;
 }
@@ -120,6 +126,8 @@ void encrypt_data(void) {
 	for(k = 0; k < strlen(data); k++) {
 		encrypted_data[k] = data[k] + encryptation_seed;
 	}
+
+	strcat(encrypted_data, "\n");
 }
 
 module_init(driver_init);
