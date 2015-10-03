@@ -13,8 +13,3 @@ echo ''
 echo 'Deleting entry from /dev for the decrypter'
 sudo rm /dev/decrypter 
 echo '/dev/decrypter -> Deleted'
-echo ''
-echo 'Cleaning'
-make clean
-echo 'Done'
-echo ''
