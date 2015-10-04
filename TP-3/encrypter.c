@@ -1,18 +1,34 @@
+/*
+* Sistemas Operativos I.
+* ----------------------
+*
+* Trabajo Práctico Nº 3.
+*
+* Alumno: Giles García, Arian.
+* Matrícula: 36201187.
+*/
+
+/*
+* Libraries
+*/
+
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/string.h>
 #include <asm/uaccess.h>
 
-/* Module Information */
-/* ------------------ */
+/*
+* Module Information 
+*/
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Device Driver Encrypter");
 MODULE_AUTHOR("Arian Giles Garcia");
 
-/* Variables */
-/* --------- */
+/*
+* Variables 
+*/
 
 /* Major Number of the Driver */
 static int major_number = 50;
@@ -29,8 +45,10 @@ static char data[100] = {0};
 /* Encripted data */
 static char encrypted_data[100] = {0};
 
-/* Functions Declarations */
-/* ---------------------- */
+/*
+* Functions Declarations 
+*/
+
 int dev_open(struct inode *pinode, struct file *pfile);
 ssize_t dev_read (struct file *pfile, char __user *buffer, size_t length, loff_t *offset);
 ssize_t dev_write (struct file *pfile, const char __user *buffer, size_t length, loff_t *offset);
@@ -38,8 +56,9 @@ int dev_close (struct inode *pinode, struct file *pfile);
 
 void encrypt_data(void);
 
-/* File Operations Structure */
-/* ------------------------- */
+/*
+* File Operations Structure 
+*/
 
 struct file_operations fops = {
 	.open = dev_open,
@@ -48,8 +67,9 @@ struct file_operations fops = {
 	.release = dev_close
 };
 
-/* File Operations Functions */
-/* ------------------------- */
+/*
+* File Operations Functions
+*/
 
 /* Device Open */
 int dev_open(struct inode *pinode, struct file *pfile) {
