@@ -16,7 +16,6 @@ echo ''
 
 echo 'String to encrypt: "Hello World!"'
 echo '--------------------------------'
-echo ''
 
 echo 'Encripting -> echo Hello World! > /dev/encrypter'
 echo Hello World! > /dev/encrypter
