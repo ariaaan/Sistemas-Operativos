@@ -101,7 +101,7 @@ ssize_t dev_write (struct file *pfile, const char __user *buffer, size_t length,
 	memset(data, 0, 100);
 	memset(encrypted_data, 0, 100);
 
-	strncpy(data, buffer, length - 1);
+	strncpy(data, buffer, length);
 
 	encrypt_data();
 
@@ -140,8 +140,6 @@ void encrypt_data(void) {
 	for(k = 0; k < strlen(data); k++) {
 		encrypted_data[k] = data[k] + encryption_seed;
 	}
-
-	strcat(encrypted_data, "\n");
 }
 
 module_init(driver_init);
