@@ -18,6 +18,9 @@ Implementar de manera sencilla un intérprete de línea de comandos al estilo de
 - [Trabajo Práctico **3**: módulo kernel](https://github.com/ariaaan/Sistemas-Operativos/tree/master/TP-3)   
 Desarrollo de dos simples módulos para insertar en el kernel de linux.
 
+- [Trabajo Práctico **4**: malloc y free](https://github.com/ariaaan/Sistemas-Operativos/tree/master/TP-4)   
+Implementación de las funciones `malloc()` y `free()` para manejo de memoria.
+
 ---
 
 #### Información útil para la materia
