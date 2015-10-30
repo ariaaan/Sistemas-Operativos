@@ -1,2 +1,2 @@
-memory: main.c
+memory: main.c 
 	gcc -o memory main.c
