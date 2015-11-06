@@ -21,10 +21,13 @@ struct mem_block {
 
 /* Funciones */
 void *malloc(size_t size);
-void print_memory_list();
+void free(void *p);
+
 block find_block(size_t size);
 block extend_heap(size_t size);
 void split_block(size_t size);
+
+void print_memory_list();
 
 /* Inicio de la lista */
 void *memory_list_head = NULL;
@@ -69,8 +72,8 @@ void *malloc(size_t size){
 		my_block = find_block(size);
 
 		if(my_block != NULL) {
-			printf("NO NULL! -> ");
-			printf("Size: %zu -> Free: %s -> Prev: %p -> Next: %p \n", my_block->size,  (my_block->is_free) ? "Yes": "No", my_block->prev, my_block->next);
+			/* To be coded :P */
+			printf("Se encontro un espacio libre, falta agregar codigo aca.");
 		} else {
 			my_block = extend_heap(aligned_size);
 			if(my_block == NULL) return NULL;
@@ -78,6 +81,10 @@ void *malloc(size_t size){
 			memory_list_tail = my_block;
 		}
 	}
+}
+
+void free(void *p) {
+
 }
 
 block extend_heap(size_t size) {
