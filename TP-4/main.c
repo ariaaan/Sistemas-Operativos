@@ -127,16 +127,16 @@ void print_memory_list() {
 	/* Si no esta vacia, la recorro e imprimo los datos */
 	int index = 0;
 
-	printf("+----------+----------+----------+------------+------------+\n");
-	printf("| %8s | %8s | %8s | %10s | %10s |\n", "Block Nº", "Size", "Is Free?", "Previous", "Next");
-	printf("+----------+----------+----------+------------+------------+\n");
+	printf("+----------+----------+----------+------------+------------+------------+\n");
+	printf("| %8s | %8s | %8s | %10s | %10s | %10s |\n", "Block Nº", "Size", "Is Free?", "Previous", "This", "Next");
+	printf("+----------+----------+----------+------------+------------+------------+\n");
 
 	do {
-		printf("| %8d | %8zu | %8s | %10p | %10p |\n", index, b->size,  (b->is_free) ? "Yes": "No", b->prev, b->next);
+		printf("| %8d | %8zu | %8s | %10p | %10p | %10p |\n", index, b->size,  (b->is_free) ? "Yes": "No", b->prev, b, b->next);
 		index++;
 		b = b->next;
 	} while(b != NULL);
 
-	printf("+----------+----------+----------+------------+------------+\n");
+	printf("+----------+----------+----------+------------+------------+------------+\n");
 
 }
