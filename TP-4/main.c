@@ -1,138 +1,287 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
-/* Para alinear punteros, todos muliplos de 32 bits */
-#define align4(x) (((((x)-1)>>2)<<2)+4)
+/* META_SIZE es el tamaño del bloque de meta-data */
+#define META_SIZE sizeof(struct block_meta)
 
-/* Tamaño de la estrcutura que representa un bloque */
-#define BLOCK_SIZE sizeof(struct mem_block)
+/* Para alinear punteros, se utilizan tamaños muliplos de 32 bits (4 bytes) */
+#define alinear4(x) (((((x)-1)>>2)<<2)+4)
 
-/* Definicion de tipo puntero a mem_block */
-typedef struct mem_block* block;
+/* Declaración de la función malloc() */
+void *malloc(size_t size);
 
-/* Estructura que representa un bloque del heap */
-struct mem_block {
-	size_t size;
-	block next;
-	block prev;
-	int is_free;
+/* Declaración de la función free() */
+void free(void *ptr);
+
+/* Declaración de funciones auxiliares */
+struct block_meta *encontrar_bloque_libre(struct block_meta** last, size_t size);
+struct block_meta *extender_heap(struct block_meta* last, size_t size);
+struct block_meta *obtener_puntero_bloque(void *ptr);
+struct block_meta* fusionar_bloques (struct block_meta* block);
+void dividir_bloque(struct block_meta* block, size_t size);
+void imprimir_lista_memoria();
+
+/* Estructura del bloque de meta-data */
+struct block_meta {
+  size_t size;
+  struct block_meta *prev;
+  struct block_meta *next;
+  int free;
 };
 
-/* Funciones */
-void *malloc(size_t size);
-void free(void *p);
+/* Inicio de la lista doblemente enlazada */
+void *base = NULL;
 
-block find_block(size_t size);
-block extend_heap(size_t size);
-void split_block(size_t size);
-
-void print_memory_list();
-
-/* Inicio de la lista */
-void *memory_list_head = NULL;
-/* Fin de la lista */
-void *memory_list_tail = NULL;
-
+/* Metodo main() para testeo de las funciones */
 int main(int argc, char *argv[]){
 
-	malloc(45);
-	malloc(16);
-	malloc(146);
-	malloc(79);
-	malloc(255);
-	malloc(25);
+  printf("Test de la implementación de malloc() y free():\n");
+  printf("-----------------------------------------------\n\n");
 
-	print_memory_list();
+  /* Test */
+  printf("Intento alocar los siguientes valores de memoria: 140, 200, 70, 80, 250.\n");
+
+  void *ptr1 = malloc(140);
+  void *ptr2 = malloc(200);
+  void *ptr3 = malloc(70);
+  void *ptr4 = malloc(80);
+  void *ptr5 = malloc(250);
+
+  printf("Luego de alocarlos, la lista que representa el heap queda asi:\n");
+  imprimir_lista_memoria();
+
+  printf("\n");
+  printf("Libero el bloque de 200 con free(), la tabla queda como la siguiente:\n");
+  free(ptr2);
+  imprimir_lista_memoria();
+
+  printf("\n");
+  printf("Aloco memoria con malloc(80), se reutiliza el espacio vacio y se divide el bloque. \n");
+  void *ptr6 = malloc(80);
+  imprimir_lista_memoria();
+
+  printf("\n");
+  printf("Liberamos el bloque que habiamos alocado con malloc(70), y vemos que se va a unir con \n");
+  printf("el bloque libre anterior, que surgió de alocar en un espacio libre mas grande. \n");
+  free(ptr3);
+  imprimir_lista_memoria();
+
+  printf("\n");
+  printf("Si necesitamos más espacio que el que hay libre en algún bloque, se agranda el break. \n");
+  void *ptr7 = malloc(256);
+  imprimir_lista_memoria();
+
+  printf("\n");
+  printf("Por ultimo, si libero todo lo ocupado.\n");
+  free(ptr1);
+  free(ptr4);
+  free(ptr5);
+  free(ptr6);
+  free(ptr7);
+  imprimir_lista_memoria();
 
 	return 0;
 }
 
-void *malloc(size_t size){
-	/* Primero encuentro el valor mas cercano multiplo de 4 bytes (32 bits) para alocar */
-	size_t aligned_size = align4(size);
-	block new_block, last_block;
+/* Función malloc() */
+void *malloc(size_t size) {
+  struct block_meta *block;
 
-	/* Me fijo si es la primera vez que se ejecuta malloc() */
-	if(memory_list_head == NULL) {
-		/* Llamo a extend_heap */
-		new_block = extend_heap(aligned_size);
+  /* Alineo el tamaño requerido al múltiplo de 4 más cercano */
+  size = alinear4(size);
 
-		/* Si no se pudo extender el heap retorno NULL */
-		if(!new_block) return NULL;
+  /* Controlo que el tamaño sea positivo */
+  if (size <= 0) {
+    return NULL;
+  }
 
-		/* Si todo salio bien, pongo al nuevo bloque como la cabeza y cola de la lista */
-		memory_list_head = new_block;
-		memory_list_tail = new_block;
-	} else {
-		/* Si ya existe una lista */
 
-		/* Veo si hay un espacio libre en la lista en la que entre */
-		block my_block = NULL;
-		my_block = find_block(size);
+  if (!base) {
+    /* Si base es NULL, es la primera vez que se llama a malloc() */
+    /* Como es la primera vez, llamo a extender_heap */
+    block = extender_heap(NULL, size);
+    if (!block) {
+      /* Si ocurrio algún error, salgo */
+      return NULL;
+    }
+    /* Coloco al nuevo bloque como la base de la lista */
+    base = block;
+  } else {
+    /* Si no es la primera vez que se llama malloc() */
 
-		if(my_block != NULL) {
-			/* To be coded :P */
-			printf("Se encontro un espacio libre, falta agregar codigo aca.");
-		} else {
-			my_block = extend_heap(aligned_size);
-			if(my_block == NULL) return NULL;
+    /* Veo si hay un bloque libre del tamaño requerido o mayor */
+    /* Para esto, recorro la lista desde el principio (First Fit) */
+    struct block_meta *last = base;
+    block = encontrar_bloque_libre(&last, size);
+    if (!block) {
+      /* Si no se encontro nigún bloque, llamo a extender_heap */
+      block = extender_heap(last, size);
+      if (!block) {
+        /* Si hubo un error, salgo de la función */
+        return NULL;
+      }
+    } else {
+        /* Si se encontro un bloque libre, me fijo que sea del tamaño necesario */
+        if((block->size - size) >= META_SIZE + 4) {
+          /* Y divido, tomo el espacio que necesito y armo otro bloque con el resto */
+          dividir_bloque(block, size);
+        }
 
-			memory_list_tail = my_block;
-		}
-	}
+        /* Pongo el bloque que estaba libre, como ocupado */
+        block->free = 0;
+    }
+  }
+
+  return(block + 1);
 }
 
-void free(void *p) {
+/* Función free() */
+void free(void *ptr) {
+  /* Controlo que el puntero pasado no sea NULL */
+  if (!ptr) {
+    return;
+  }
 
+  /* Obtengo el puntero al bloque apuntado por "ptr" */
+  struct block_meta* block = obtener_puntero_bloque(ptr);
+
+  /* Marco el bloque como libre */
+  block->free = 1;
+
+  /* Veo si hay bloques libres antes o después, intento fusionarlos */
+  if(block->prev && block->prev->free) {
+    block = fusionar_bloques(block->prev);
+  }
+
+  if(block->next) {
+    block = fusionar_bloques(block);
+  } else {
+    /* Se llego al final de la lista */
+    if (block->prev) {
+      /* Pongo al último bloque como libre */
+      block->free = 1;
+    }
+  }
 }
 
-block extend_heap(size_t size) {
-	block new_block = NULL;
-	new_block = sbrk(0);
+/* Función dividir_bloque() */
+void dividir_bloque(struct block_meta* block, size_t size) {
+  /*Guardo el tamaño total del bloque actual*/
+  size_t total_size = block->size;
 
-	if(sbrk(BLOCK_SIZE + size) == (void*)-1) return NULL;
+  /* Creo un bloque nuevo, que comience despues que
+     termine la primera parte del bloque dividido */
+  struct block_meta* nuevo = block + META_SIZE + size;
 
-	new_block->size = size;
-	new_block->next = NULL;
-	new_block->prev = memory_list_tail;
-	new_block->is_free = 0;
+  /* Si el bloque completo tenia un siguiente */
+  if(block->next) {
+    /* Pongo el siguiente del nuevo, como el siguiente del anterior */
+    nuevo->next = block->next;
+    /* Y el anterior del siguiente del nuevo como el nuevo */
+    nuevo->next->prev = nuevo;
+  }
 
-	if(memory_list_tail != NULL) {
-		block last = memory_list_tail;
-		last->next = new_block;
-	}
+  /* El nuevo tamaño del bloque "block" es size */
+  block->size = size;
+  /* Y el siguiente bloque es el "nuevo" */
+  block->next = nuevo;
 
-	return new_block;
+  /* El tamaño del nuevo es el tamaño total del anterior menos el tamaño
+     del bloque, y el tamaño de la memoria utilizada en la primera division */
+  nuevo->size = total_size - size - META_SIZE;
+
+  /* Pongo al anterior del nuevo, como el original */
+  nuevo->prev = block;
+  /* Y lo marco como libre */
+  nuevo->free = 1;
 }
 
-block find_block(size_t size) {
-	block my_block = memory_list_head;
+/* Función fusionar_bloques() */
+struct block_meta* fusionar_bloques (struct block_meta* block) {
+  /* Me fijo si el bloque tiene un siguiente y está libre*/
+  if (block->next && block->next ->free ){
+    /* Fusiono ambos bloques */
+    block->size += META_SIZE + block->next ->size;
+    block->next = block->next->next;
+    if (block->next) {
+      /* Pongo al anterior del siguiente como el actual */
+      block->next->prev = block;
+    }
+  }
 
-	while(my_block != NULL) {
-		if((my_block->size > size) && (my_block->is_free)) return my_block;
-
-		my_block = my_block->next;
-	}
-
-	return NULL;
+  return (block);
 }
 
-void print_memory_list() {
-	block b = memory_list_head;
+/* Función encontrar_bloque_libre() */
+struct block_meta *encontrar_bloque_libre(struct block_meta **last, size_t size) {
+  /* Recorro la lista desde la base buscando un bloque que este libre
+     y que su tamaño sea mayor o igual al tamaño neceistado  */
+  struct block_meta *current = base;
+  while (current && !(current->free && current->size >= size)) {
+    *last = current;
+    current = current->next;
+  }
+
+  /* Retorno un bloque si lo encontré o NULL */
+  return current;
+}
+
+/* Función extender_heap() */
+struct block_meta *extender_heap(struct block_meta* last, size_t size) {
+  /* Creo un nuevo bloque */
+  struct block_meta *block;
+
+  /* Obtengo el break y coloco el bloque ahí */
+  block = sbrk(0);
+
+  /* Intento aumentar el break en el tamaño requerido,
+     mas el tamaño del bloque de meta-data */
+  void *request = sbrk(size + META_SIZE);
+
+  /* Si no se pudo aumentar el break, retorno NULL, hubo un error */
+  if (request == (void*) -1) {
+    return NULL;
+  }
+
+  /* Si no es la primera vez, actualizo el next del último */
+  if (last) {
+    last->next = block;
+  }
+
+  /* Actualizo el tamaño, el siguiente, el anterior y el estado (free) del nuevo bloque */
+  block->size = size;
+  block->next = NULL;
+  block->prev = last;
+  block->free = 0;
+
+  /* Retorno el bloque recientemente alocado */
+  return block;
+}
+
+/* Función obtener_puntero_bloque() */
+struct block_meta *obtener_puntero_bloque(void *ptr) {
+  /* Retorno el puntero al bloque desado */
+  return (struct block_meta*) ptr - 1;
+}
+
+/* Función imprimir_lista_memoria() */
+/* Sólo para debugging, imprime la lista doblemente enlazada
+   de una forma que sea sencilla de ver e interpretar */
+void imprimir_lista_memoria() {
+	struct block_meta *b = base;
 
 	/* Si la lista esta vacia no hago nada */
 	if(b == NULL) return;
 
-	/* Si no esta vacia, la recorro e imprimo los datos */
-	int index = 0;
+	/* Si no esta vacia, la recorro e imprimo los datos en forma de tabla */
+	int index = 1;
 
 	printf("+----------+----------+----------+------------+------------+------------+\n");
-	printf("| %8s | %8s | %8s | %10s | %10s | %10s |\n", "Block Nº", "Size", "Is Free?", "Previous", "This", "Next");
+	printf("| %8s | %8s | %8s | %10s | %10s | %10s |\n", "Nº Bloque", "Tamaño", "Libre", "Anterior", "Actual", "Siguiente");
 	printf("+----------+----------+----------+------------+------------+------------+\n");
 
 	do {
-		printf("| %8d | %8zu | %8s | %10p | %10p | %10p |\n", index, b->size,  (b->is_free) ? "Yes": "No", b->prev, b, b->next);
+		printf("| %8d | %8zu | %8s | %10p | %10p | %10p |\n", index, b->size,  (b->free) ? "Yes": "No", b->prev, b, b->next);
 		index++;
 		b = b->next;
 	} while(b != NULL);
