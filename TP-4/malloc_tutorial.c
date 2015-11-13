@@ -12,13 +12,16 @@ void *malloc(size_t size);
 void free(void *ptr);
 
 /* Tries to find a free block the size of the "size" parameter */
-struct block_meta *find_free_block(struct block_meta **last, size_t size);
+struct block_meta *find_free_block(struct block_meta** last, size_t size);
 
 /* Requests space from the OS using sbrk and adds the block to the list */
 struct block_meta *request_space(struct block_meta* last, size_t size);
 
 /* Get the address of our block_meta struct */
 struct block_meta *get_block_ptr(void *ptr);
+
+/* Splits a free block in two */
+void split_block(struct block_meta* block, size_t size);
 
 /* Prettily prints the linked list of blocks */
 void print_memory_list();
@@ -34,15 +37,16 @@ void *global_base = NULL;
 
 int main(int argc, char *argv[]){
 
-  malloc(1);
-  malloc(2);
-  void *ptr = malloc(3);
-  malloc(4);
-  malloc(5);
+  void *ptr1 = malloc(140);
+  void *ptr2 = malloc(200);
+  void *ptr3 = malloc(70);
+  void *ptr4 = malloc(80);
+  void *ptr5 = malloc(250);
+
   print_memory_list();
-  free(ptr);
+  free(ptr2);
   print_memory_list();
-  malloc(5);
+  malloc(80);
   print_memory_list();
 
 	return 0;
@@ -50,7 +54,7 @@ int main(int argc, char *argv[]){
 
 void *malloc(size_t size) {
   struct block_meta *block;
-  // TODO: align size?
+
   size = align4(size);
 
   if (size <= 0) {
@@ -73,11 +77,20 @@ void *malloc(size_t size) {
       }
     } else {      // Found free block
       // TODO: consider splitting block here.
+
+      printf("Minumum size to split: %zu\n", META_SIZE + 4);
+      printf("Available Size after Split: %zu\n", block->size - size);
+
+      if((block->size - size) >= META_SIZE + 4) {
+        printf("Split Block\n");
+        split_block(block, size);
+      }
+
       block->free = 0;
     }
   }
 
-  return(block+1);
+  return(block + 1);
 }
 
 void free(void *ptr) {
@@ -90,6 +103,23 @@ void free(void *ptr) {
   struct block_meta* block_ptr = get_block_ptr(ptr);
 
   block_ptr->free = 1;
+}
+
+void split_block(struct block_meta* block, size_t size) {
+  size_t total_size = block->size;
+
+  struct block_meta* new = block + META_SIZE + size;
+
+  if(block->next) {
+    new->next = block->next;
+  }
+
+  block->size = size;
+  block->next = new;
+
+  new->size = total_size - size - META_SIZE;
+  new->prev = block;
+  new->free = 1;
 }
 
 struct block_meta *find_free_block(struct block_meta **last, size_t size) {
@@ -123,7 +153,7 @@ struct block_meta *request_space(struct block_meta* last, size_t size) {
 }
 
 struct block_meta *get_block_ptr(void *ptr) {
-  return (struct block_meta*)ptr - 1;
+  return (struct block_meta*) ptr - 1;
 }
 
 void print_memory_list() {
@@ -133,7 +163,7 @@ void print_memory_list() {
 	if(b == NULL) return;
 
 	/* Si no esta vacia, la recorro e imprimo los datos */
-	int index = 0;
+	int index = 1;
 
 	printf("+----------+----------+----------+------------+------------+------------+\n");
 	printf("| %8s | %8s | %8s | %10s | %10s | %10s |\n", "Block Nº", "Size", "Is Free?", "Previous", "This", "Next");
