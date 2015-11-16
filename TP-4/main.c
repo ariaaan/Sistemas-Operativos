@@ -27,6 +27,7 @@ struct block_meta {
   struct block_meta *prev;
   struct block_meta *next;
   int free;
+  char data[1];
 };
 
 /* Inicio de la lista doblemente enlazada */
@@ -72,12 +73,17 @@ int main(int argc, char *argv[]){
   imprimir_lista_memoria();
 
   printf("\n");
-  printf("Por ultimo, si libero todo lo ocupado.\n");
+  printf("Si libero todo lo ocupado.\n");
   free(ptr1);
   free(ptr4);
   free(ptr5);
   free(ptr6);
   free(ptr7);
+  imprimir_lista_memoria();
+
+  printf("\n");
+  printf("Alloco de nuevo con malloc(100), se reutiliza lo anteriormente alocado, y se divide.\n");
+  void *ptr8 = malloc(100);
   imprimir_lista_memoria();
 
 	return 0;
@@ -171,7 +177,7 @@ void dividir_bloque(struct block_meta* block, size_t size) {
 
   /* Creo un bloque nuevo, que comience despues que
      termine la primera parte del bloque dividido */
-  struct block_meta* nuevo = block + META_SIZE + size;
+  struct block_meta* nuevo = (struct block_meta* ) block->data + size;
 
   /* Si el bloque completo tenia un siguiente */
   if(block->next) {
