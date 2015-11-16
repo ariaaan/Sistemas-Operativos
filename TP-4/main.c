@@ -287,7 +287,7 @@ void imprimir_lista_memoria() {
 	printf("+----------+----------+----------+------------+------------+------------+\n");
 
 	do {
-		printf("| %8d | %8zu | %8s | %10p | %10p | %10p |\n", index, b->size,  (b->free) ? "Yes": "No", b->prev, b, b->next);
+		printf("| %8d | %8zu | %8s | %10p | %10p | %10p |\n", index, b->size,  (b->free) ? "Si": "No", b->prev, b, b->next);
 		index++;
 		b = b->next;
 	} while(b != NULL);
